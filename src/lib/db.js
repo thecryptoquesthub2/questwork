@@ -1,15 +1,24 @@
-const DATABASE_URL = import.meta.env.VITE_DATABASE_URL
+const API_URL = 'https://questwork.up.railway.app'
 
-export async function query(queryText, params = []) {
-  try {
-    const { neon } = await import('@neondatabase/serverless')
-    const sql = neon(DATABASE_URL)
-    const result = await sql(queryText, params)
-    return result
-  } catch (error) {
-    console.error('Database error:', error)
-    return []
-  }
+export async function getGigs() {
+  const res = await fetch(`${API_URL}/api/gigs`)
+  return res.json()
 }
 
-export default { query }
+export async function postGig(data) {
+  const res = await fetch(`${API_URL}/api/gigs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  return res.json()
+}
+
+export async function postApplication(data) {
+  const res = await fetch(`${API_URL}/api/applications`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  return res.json()
+}
