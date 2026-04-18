@@ -1,5 +1,11 @@
 import { neon } from '@neondatabase/serverless'
 
-const sql = neon(import.meta.env.VITE_DATABASE_URL)
+let sql
+
+try {
+  sql = neon(import.meta.env.VITE_DATABASE_URL)
+} catch (e) {
+  console.error('DB connection failed:', e)
+}
 
 export default sql
