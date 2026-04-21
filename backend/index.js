@@ -92,6 +92,7 @@ My Skills: ${user_skills || 'Web3, Community Management, BD'}
 My Bio: ${user_bio || 'Experienced Web3 professional'}
 
 Write a 3 paragraph pitch that is professional, specific, and compelling. Do not include subject lines or greetings. Just the pitch paragraphs.`
+IMPORTANT: Do not use markdown formatting. No asterisks, no ## headers, no bold text. Plain text only with simple line breaks.
         }]
       })
     })
