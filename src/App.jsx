@@ -41,6 +41,7 @@ export default function App() {
   const { theme, resolved, cycleTheme } = useTheme()
   const [active, setActive] = useState('home')
   const [animating, setAnimating] = useState(false)
+  const [tgUser, setTgUser] = useState(null)
   const dark = resolved === 'dark'
 
   useEffect(() => {
@@ -52,6 +53,21 @@ export default function App() {
     document.body.style.padding = '0'
     document.documentElement.style.margin = '0'
     document.documentElement.style.padding = '0'
+
+    const user = window.Telegram?.WebApp?.initDataUnsafe?.user
+    if (user) {
+      setTgUser(user)
+      fetch('https://questwork.up.railway.app/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tg_id: String(user.id),
+          tg_username: user.username || '',
+          first_name: user.first_name || '',
+          last_name: user.last_name || ''
+        })
+      })
+    }
   }, [])
 
   useEffect(() => {
@@ -142,10 +158,10 @@ export default function App() {
         position: 'relative', zIndex: 1,
         width: '100%', boxSizing: 'border-box',
       }}>
-        {active === 'home' && <HomePage colors={colors} dark={dark} navigate={navigate}/>}
-        {active === 'gigs' && <GigsPage colors={colors} dark={dark}/>}
-        {active === 'post' && <PostPage colors={colors} dark={dark}/>}
-        {active === 'profile' && <ProfilePage colors={colors} dark={dark}/>}
+        {active === 'home' && <HomePage colors={colors} dark={dark} navigate={navigate} tgUser={tgUser}/>}
+        {active === 'gigs' && <GigsPage colors={colors} dark={dark} tgUser={tgUser}/>}
+        {active === 'post' && <PostPage colors={colors} dark={dark} tgUser={tgUser}/>}
+        {active === 'profile' && <ProfilePage colors={colors} dark={dark} tgUser={tgUser}/>}
       </div>
 
       {/* BOTTOM NAV */}
@@ -177,11 +193,13 @@ export default function App() {
   )
 }
 
-function HomePage({ colors, dark, navigate }) {
+function HomePage({ colors, dark, navigate, tgUser }) {
   return (
     <div style={{ width: '100%', boxSizing: 'border-box' }}>
       <div style={{ padding: '28px 20px 20px' }}>
-        <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '6px' }}>Good day 👋</div>
+        <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '6px' }}>
+          Good day, {tgUser?.first_name || 'there'} 👋
+        </div>
         <div style={{ fontSize: '28px', fontWeight: '700', letterSpacing: '-0.8px', lineHeight: 1.2, marginBottom: '6px' }}>
           Find your next<br /><span style={{ color: colors.accent }}>Web3 Quest</span>
         </div>
@@ -242,7 +260,7 @@ function HomePage({ colors, dark, navigate }) {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {SAMPLE_GIGS.filter(g => g.featured).map((gig) => (
-            <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} />
+            <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser}/>
           ))}
         </div>
       </div>
@@ -251,7 +269,7 @@ function HomePage({ colors, dark, navigate }) {
         <div style={{ fontSize: '13px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '14px' }}>Latest Gigs</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {SAMPLE_GIGS.filter(g => !g.featured).map((gig) => (
-            <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} />
+            <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser}/>
           ))}
         </div>
       </div>
@@ -259,7 +277,7 @@ function HomePage({ colors, dark, navigate }) {
   )
 }
 
-function GigCard({ gig, colors, dark }) {
+function GigCard({ gig, colors, dark, tgUser }) {
   const [pressed, setPressed] = useState(false)
   const [showApply, setShowApply] = useState(false)
   const [pitch, setPitch] = useState('')
@@ -281,16 +299,27 @@ function GigCard({ gig, colors, dark }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           gig_id: gig.id,
-          applicant_tg_id: 'user_123',
-          applicant_username: '@user',
+          applicant_tg_id: tgUser ? String(tgUser.id) : 'unknown',
+          applicant_username: tgUser?.username || 'unknown',
           pitch: `${pitch}\n\nPortfolio: ${portfolio || 'Not provided'}\n\n---\n🚀 Applied via QuestWork\nWeb3 Freelance Network | t.me/Questworkbot\nquestwork.netlify.app`
         })
       })
       setApplied(true)
-      setShowApply(false)
-      setPitch('')
-      setPortfolio('')
-      haptic('heavy')
+setShowApply(false)
+setPitch('')
+setPortfolio('')
+haptic('heavy')
+
+if (gig.poster_tg_id) {
+  await fetch('https://questwork.up.railway.app/api/notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: gig.poster_tg_id,
+      message: `🔥 <b>New Application!</b>\n\n<b>Gig:</b> ${gig.title}\n<b>From:</b> @${tgUser?.username || 'someone'}\n<b>Name:</b> ${tgUser?.first_name || 'Unknown'}\n\n<b>Pitch:</b> ${pitch}\n\n<a href="https://questwork.netlify.app">Open QuestWork →</a>`
+    })
+  })
+}
     } catch (err) {
       console.error(err)
       alert('Error submitting. Please try again.')
@@ -359,7 +388,6 @@ function GigCard({ gig, colors, dark }) {
         </div>
       </div>
 
-      {/* APPLY MODAL - PERFECTLY CENTERED */}
       {showApply && (
         <div
           onClick={() => { haptic('light'); setShowApply(false) }}
@@ -394,7 +422,26 @@ function GigCard({ gig, colors, dark }) {
             <div style={{ fontSize: '20px', fontWeight: '700', marginBottom: '4px', letterSpacing: '-0.3px' }}>Apply for {gig.title}</div>
             <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '20px' }}>{gig.company} · {gig.pay}</div>
 
-            {/* PITCH */}
+            {tgUser && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '10px 12px', borderRadius: '12px',
+                background: colors.surface2, border: `1px solid ${colors.border}`,
+                marginBottom: '16px'
+              }}>
+                <div style={{
+                  width: '32px', height: '32px', borderRadius: '50%',
+                  background: colors.accentBg,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '14px', fontWeight: '700'
+                }}>{tgUser.first_name?.[0]}</div>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: '600' }}>{tgUser.first_name} {tgUser.last_name || ''}</div>
+                  <div style={{ fontSize: '11px', color: colors.text2 }}>@{tgUser.username || 'user'}</div>
+                </div>
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Your Pitch</div>
               <button
@@ -423,7 +470,6 @@ function GigCard({ gig, colors, dark }) {
               }}
             />
 
-            {/* PORTFOLIO */}
             <div style={{ marginTop: '12px' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Portfolio / LinkedIn URL</div>
               <input
@@ -443,7 +489,6 @@ function GigCard({ gig, colors, dark }) {
               />
             </div>
 
-            {/* BRANDING SIGNATURE */}
             <div style={{
               marginTop: '12px', padding: '10px 12px',
               borderRadius: '10px',
@@ -481,7 +526,7 @@ function GigCard({ gig, colors, dark }) {
   )
 }
 
-function GigsPage({ colors, dark }) {
+function GigsPage({ colors, dark, tgUser }) {
   const [filter, setFilter] = useState('All')
   const [dbGigs, setDbGigs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -523,7 +568,7 @@ function GigsPage({ colors, dark }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {filtered.map((gig) => (
-            <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} />
+            <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser}/>
           ))}
         </div>
       )}
@@ -531,7 +576,7 @@ function GigsPage({ colors, dark }) {
   )
 }
 
-function PostPage({ colors, dark }) {
+function PostPage({ colors, dark, tgUser }) {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [customCategory, setCustomCategory] = useState('')
@@ -556,7 +601,12 @@ function PostPage({ colors, dark }) {
       await fetch('https://questwork.up.railway.app/api/gigs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, category: finalCategory })
+        body: JSON.stringify({
+          ...form,
+          category: finalCategory,
+          poster_tg_id: tgUser ? String(tgUser.id) : null,
+          poster_username: tgUser?.username || null,
+        })
       })
       haptic('heavy')
       setSuccess(true)
@@ -649,7 +699,7 @@ function PostPage({ colors, dark }) {
   )
 }
 
-function ProfilePage({ colors, dark }) {
+function ProfilePage({ colors, dark, tgUser }) {
   const [showPayment, setShowPayment] = useState(false)
   const [bio, setBio] = useState('')
   const [skills, setSkills] = useState('')
@@ -698,16 +748,27 @@ function ProfilePage({ colors, dark }) {
         boxShadow: dark ? 'none' : '0 2px 12px rgba(0,0,0,0.06)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-          <div style={{
-            width: '64px', height: '64px', borderRadius: '50%',
-            background: dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '26px', fontWeight: '700', flexShrink: 0,
-            border: `2px solid ${colors.border}`
-          }}>A</div>
+          {tgUser?.photo_url ? (
+            <img src={tgUser.photo_url} style={{
+              width: '64px', height: '64px', borderRadius: '50%',
+              border: `2px solid ${colors.border}`, objectFit: 'cover', flexShrink: 0
+            }} />
+          ) : (
+            <div style={{
+              width: '64px', height: '64px', borderRadius: '50%',
+              background: dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '26px', fontWeight: '700', flexShrink: 0,
+              border: `2px solid ${colors.border}`
+            }}>{tgUser?.first_name?.[0] || 'A'}</div>
+          )}
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '18px', fontWeight: '700', letterSpacing: '-0.3px' }}>Al-amin</div>
-            <div style={{ fontSize: '13px', color: colors.text2, marginTop: '2px' }}>@alameen</div>
+            <div style={{ fontSize: '18px', fontWeight: '700', letterSpacing: '-0.3px' }}>
+              {tgUser ? `${tgUser.first_name} ${tgUser.last_name || ''}` : 'Al-amin'}
+            </div>
+            <div style={{ fontSize: '13px', color: colors.text2, marginTop: '2px' }}>
+              @{tgUser?.username || 'alameen'}
+            </div>
             <div style={{ fontSize: '11px', color: colors.text2, marginTop: '2px' }}>🕐 Last seen: Just now</div>
             <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
               <div style={{
@@ -730,7 +791,7 @@ function ProfilePage({ colors, dark }) {
           </div>
         </div>
 
-        {/* AVAILABILITY SELECTOR */}
+        {/* AVAILABILITY */}
         <div style={{ marginBottom: '14px' }}>
           <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Availability</div>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -779,7 +840,7 @@ function ProfilePage({ colors, dark }) {
           />
         </div>
 
-        {/* SAVE BUTTON */}
+        {/* SAVE */}
         <button onClick={handleSave} style={{
           width: '100%', padding: '13px', borderRadius: '12px',
           background: saved ? 'rgba(52,211,153,0.1)' : colors.btnBg,
@@ -822,7 +883,7 @@ function ProfilePage({ colors, dark }) {
           border: `1px solid ${colors.accentBorder}`,
           borderRadius: '16px', padding: '16px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginBottom: '24px', cursor: 'pointer'
+          marginBottom: '16px', cursor: 'pointer'
         }}>
         <div>
           <div style={{ fontSize: '14px', fontWeight: '700' }}>✨ Upgrade to Premium</div>
