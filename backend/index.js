@@ -48,6 +48,120 @@ app.post('/api/applications', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+// Send Telegram notification
+app.post('/api/notify', async (req, res) => {
+  try {
+    const { chat_id, message } = req.body
+    const BOT_TOKEN = process.env.BOT_TOKEN
+    
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chat_id,
+        text: message,
+        parse_mode: 'HTML'
+      })
+    })
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+// AI Pitch Writer
+app.post('/api/ai/pitch', async (req, res) => {
+  try {
+    const { gig_title, gig_company, user_skills, user_bio } = req.body
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 500,
+        messages: [{
+          role: 'user',
+          content: `Write a professional and compelling job application pitch for this Web3 role:
+          
+Job Title: ${gig_title}
+Company: ${gig_company}
+My Skills: ${user_skills || 'Web3, Community Management, BD'}
+My Bio: ${user_bio || 'Experienced Web3 professional'}
 
+Write a 3 paragraph pitch that is professional, specific, and compelling. Do not include subject lines or greetings. Just the pitch paragraphs.`
+        }]
+      })
+    })
+    const data = await response.json()
+    res.json({ pitch: data.content[0].text })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// AI Gig Description Writer
+app.post('/api/ai/gig', async (req, res) => {
+  try {
+    const { basic_info } = req.body
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 500,
+        messages: [{
+          role: 'user',
+          content: `Write a professional Web3 job description based on this basic info: "${basic_info}"
+          
+Write a clear, professional job description with:
+- Role overview (2-3 sentences)
+- Key responsibilities (4-5 bullet points)
+- Requirements (3-4 bullet points)
+
+Keep it concise and Web3 focused.`
+        }]
+      })
+    })
+    const data = await response.json()
+    res.json({ description: data.content[0].text })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => console.log(`QuestWork API running on port ${PORT}`))
+// Save or update user
+app.post('/api/users', async (req, res) => {
+  try {
+    const { tg_id, tg_username, first_name, last_name } = req.body
+    await sql`
+      INSERT INTO users (tg_id, tg_username, first_name, last_name)
+      VALUES (${tg_id}, ${tg_username}, ${first_name}, ${last_name})
+      ON CONFLICT (tg_id) DO UPDATE
+      SET tg_username = ${tg_username},
+          first_name = ${first_name},
+          last_name = ${last_name}
+    `
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Get user by tg_id
+app.get('/api/users/:tg_id', async (req, res) => {
+  try {
+    const { tg_id } = req.params
+    const user = await sql`SELECT * FROM users WHERE tg_id = ${tg_id}`
+    res.json(user[0] || null)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})

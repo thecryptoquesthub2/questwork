@@ -301,7 +301,7 @@ function GigCard({ gig, colors, dark, tgUser }) {
           gig_id: gig.id,
           applicant_tg_id: tgUser ? String(tgUser.id) : 'unknown',
           applicant_username: tgUser?.username || 'unknown',
-          pitch: `${pitch}\n\nPortfolio: ${portfolio || 'Not provided'}\n\n---\n🚀 Applied via QuestWork\nWeb3 Freelance Network | t.me/Questworkbot\nquestwork.netlify.app`
+          pitch: `${pitch}\n\nPortfolio: ${portfolio || 'Not provided'}\n\n---\n🚀 Applied via QuestWork\nWeb3 Freelance Network | t.me/Questworkbot\nquestworkio.netlify.app`
         })
       })
       setApplied(true)
@@ -316,7 +316,7 @@ if (gig.poster_tg_id) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: gig.poster_tg_id,
-      message: `🔥 <b>New Application!</b>\n\n<b>Gig:</b> ${gig.title}\n<b>From:</b> @${tgUser?.username || 'someone'}\n<b>Name:</b> ${tgUser?.first_name || 'Unknown'}\n\n<b>Pitch:</b> ${pitch}\n\n<a href="https://questwork.netlify.app">Open QuestWork →</a>`
+      message: `🔥 <b>New Application!</b>\n\n<b>Gig:</b> ${gig.title}\n<b>From:</b> @${tgUser?.username || 'someone'}\n<b>Name:</b> ${tgUser?.first_name || 'Unknown'}\n\n<b>Pitch:</b> ${pitch}\n\n<a href="https://questworkio.netlify.app">Open QuestWork →</a>`
     })
   })
 }
