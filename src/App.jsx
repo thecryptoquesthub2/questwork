@@ -9,6 +9,8 @@ const LOGO_SVG = () => (
   </svg>
 )
 
+const API = 'https://questwork.up.railway.app'
+
 const SAMPLE_GIGS = [
   { id: 1, title: "Community Manager", company: "Sui Network", pay: "$800/mo", tag: "Africa", category: "Community Management", featured: true },
   { id: 2, title: "BD Manager", company: "TON Wallet", pay: "$1,200/mo", tag: "MENA", category: "Business Development", featured: true },
@@ -57,7 +59,7 @@ export default function App() {
     const user = window.Telegram?.WebApp?.initDataUnsafe?.user
     if (user) {
       setTgUser(user)
-      fetch('https://questwork.up.railway.app/api/users', {
+      fetch(`${API}/api/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -194,6 +196,25 @@ export default function App() {
 }
 
 function HomePage({ colors, dark, navigate, tgUser }) {
+  const [search, setSearch] = useState('')
+  const [filteredGigs, setFilteredGigs] = useState(SAMPLE_GIGS)
+
+  const handleSearch = (value) => {
+    setSearch(value)
+    if (!value.trim()) {
+      setFilteredGigs(SAMPLE_GIGS)
+      return
+    }
+    const lower = value.toLowerCase()
+    const results = SAMPLE_GIGS.filter(g =>
+      g.title.toLowerCase().includes(lower) ||
+      g.company.toLowerCase().includes(lower) ||
+      g.category.toLowerCase().includes(lower) ||
+      g.tag.toLowerCase().includes(lower)
+    )
+    setFilteredGigs(results)
+  }
+
   return (
     <div style={{ width: '100%', boxSizing: 'border-box' }}>
       <div style={{ padding: '28px 20px 20px' }}>
@@ -213,66 +234,103 @@ function HomePage({ colors, dark, navigate, tgUser }) {
           background: colors.surface2, border: `1px solid ${colors.border}`,
         }}>
           <span style={{ fontSize: '15px', opacity: 0.5 }}>🔍</span>
-          <span style={{ fontSize: '14px', color: colors.text2 }}>Search gigs, skills, companies...</span>
+          <input
+            value={search}
+            onChange={e => handleSearch(e.target.value)}
+            placeholder="Search gigs, skills, companies..."
+            style={{
+              flex: 1, background: 'none', border: 'none', outline: 'none',
+              color: colors.text, fontSize: '14px', fontFamily: 'inherit'
+            }}
+          />
+          {search && (
+            <button onClick={() => handleSearch('')} style={{
+              background: 'none', border: 'none', color: colors.text2,
+              fontSize: '16px', cursor: 'pointer', padding: 0
+            }}>✕</button>
+          )}
         </div>
       </div>
 
-      <div style={{ padding: '0 20px 24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-          {[
-            { value: '120+', label: 'Active Gigs', emoji: '💼' },
-            { value: '500+', label: 'Freelancers', emoji: '🌍' },
-            { value: '$50K+', label: 'Paid Out', emoji: '💰' },
-          ].map((s, i) => (
-            <div key={i} style={{
-              background: colors.card, border: `1px solid ${colors.border}`,
-              borderRadius: '16px', padding: '14px 10px', textAlign: 'center',
-              boxShadow: dark ? 'none' : '0 2px 8px rgba(0,0,0,0.06)'
-            }}>
-              <div style={{ fontSize: '20px', marginBottom: '4px' }}>{s.emoji}</div>
-              <div style={{ fontSize: '17px', fontWeight: '700' }}>{s.value}</div>
-              <div style={{ fontSize: '10px', color: colors.text2, marginTop: '2px' }}>{s.label}</div>
+      {search ? (
+        <div style={{ padding: '0 20px' }}>
+          <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '14px' }}>
+            {filteredGigs.length} result{filteredGigs.length !== 1 ? 's' : ''} for "{search}"
+          </div>
+          {filteredGigs.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: colors.text2 }}>
+              <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔍</div>
+              <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '6px' }}>No gigs found</div>
+              <div style={{ fontSize: '13px' }}>Try different keywords</div>
             </div>
-          ))}
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {filteredGigs.map((gig) => (
+                <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser}/>
+              ))}
+            </div>
+          )}
         </div>
-      </div>
+      ) : (
+        <>
+          <div style={{ padding: '0 20px 24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+              {[
+                { value: '120+', label: 'Active Gigs', emoji: '💼' },
+                { value: '500+', label: 'Freelancers', emoji: '🌍' },
+                { value: '$50K+', label: 'Paid Out', emoji: '💰' },
+              ].map((s, i) => (
+                <div key={i} style={{
+                  background: colors.card, border: `1px solid ${colors.border}`,
+                  borderRadius: '16px', padding: '14px 10px', textAlign: 'center',
+                  boxShadow: dark ? 'none' : '0 2px 8px rgba(0,0,0,0.06)'
+                }}>
+                  <div style={{ fontSize: '20px', marginBottom: '4px' }}>{s.emoji}</div>
+                  <div style={{ fontSize: '17px', fontWeight: '700' }}>{s.value}</div>
+                  <div style={{ fontSize: '10px', color: colors.text2, marginTop: '2px' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
 
-      <div style={{ padding: '0 20px 20px' }}>
-        <div style={{ fontSize: '13px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '12px' }}>Categories</div>
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-          {['All', 'Community', 'BD', 'Dev', 'Social', 'Writing'].map((cat, i) => (
-            <button key={cat} onClick={() => haptic('light')} style={{
-              padding: '7px 14px', borderRadius: '20px', whiteSpace: 'nowrap',
-              background: i === 0 ? colors.btnBg : colors.surface2,
-              border: `1px solid ${i === 0 ? colors.btnBg : colors.border}`,
-              color: i === 0 ? colors.btnText : colors.text,
-              fontSize: '13px', fontWeight: i === 0 ? '600' : '400',
-              cursor: 'pointer'
-            }}>{cat}</button>
-          ))}
-        </div>
-      </div>
+          <div style={{ padding: '0 20px 20px' }}>
+            <div style={{ fontSize: '13px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '12px' }}>Categories</div>
+            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+              {['All', 'Community', 'BD', 'Dev', 'Social', 'Writing'].map((cat, i) => (
+                <button key={cat} onClick={() => haptic('light')} style={{
+                  padding: '7px 14px', borderRadius: '20px', whiteSpace: 'nowrap',
+                  background: i === 0 ? colors.btnBg : colors.surface2,
+                  border: `1px solid ${i === 0 ? colors.btnBg : colors.border}`,
+                  color: i === 0 ? colors.btnText : colors.text,
+                  fontSize: '13px', fontWeight: i === 0 ? '600' : '400',
+                  cursor: 'pointer'
+                }}>{cat}</button>
+              ))}
+            </div>
+          </div>
 
-      <div style={{ padding: '0 20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <div style={{ fontSize: '13px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Featured</div>
-          <button onClick={() => { haptic('light'); navigate('gigs') }} style={{ fontSize: '13px', color: colors.accent, background: 'none', border: 'none', cursor: 'pointer', fontWeight: '500' }}>See all →</button>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {SAMPLE_GIGS.filter(g => g.featured).map((gig) => (
-            <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser}/>
-          ))}
-        </div>
-      </div>
+          <div style={{ padding: '0 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Featured</div>
+              <button onClick={() => { haptic('light'); navigate('gigs') }} style={{ fontSize: '13px', color: colors.accent, background: 'none', border: 'none', cursor: 'pointer', fontWeight: '500' }}>See all →</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {SAMPLE_GIGS.filter(g => g.featured).map((gig) => (
+                <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser}/>
+              ))}
+            </div>
+          </div>
 
-      <div style={{ padding: '24px 20px 0' }}>
-        <div style={{ fontSize: '13px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '14px' }}>Latest Gigs</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {SAMPLE_GIGS.filter(g => !g.featured).map((gig) => (
-            <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser}/>
-          ))}
-        </div>
-      </div>
+          <div style={{ padding: '24px 20px 0' }}>
+            <div style={{ fontSize: '13px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '14px' }}>Latest Gigs</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {SAMPLE_GIGS.filter(g => !g.featured).map((gig) => (
+                <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser}/>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -284,6 +342,34 @@ function GigCard({ gig, colors, dark, tgUser }) {
   const [portfolio, setPortfolio] = useState('')
   const [applying, setApplying] = useState(false)
   const [applied, setApplied] = useState(false)
+  const [generatingPitch, setGeneratingPitch] = useState(false)
+  const isPremium = false
+
+  const handleAIPitch = async () => {
+    haptic('medium')
+    if (!isPremium) {
+      alert('🔒 Upgrade to Premium to use AI Pitch Writer!')
+      return
+    }
+    setGeneratingPitch(true)
+    try {
+      const res = await fetch(`${API}/api/ai/pitch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gig_title: gig.title,
+          gig_company: gig.company,
+          user_skills: '',
+          user_bio: ''
+        })
+      })
+      const data = await res.json()
+      setPitch(data.pitch)
+    } catch (err) {
+      alert('Error generating pitch. Please try again.')
+    }
+    setGeneratingPitch(false)
+  }
 
   const handleApply = async () => {
     if (!pitch.trim()) {
@@ -294,7 +380,7 @@ function GigCard({ gig, colors, dark, tgUser }) {
     haptic('medium')
     setApplying(true)
     try {
-      await fetch('https://questwork.up.railway.app/api/applications', {
+      await fetch(`${API}/api/applications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -304,22 +390,23 @@ function GigCard({ gig, colors, dark, tgUser }) {
           pitch: `${pitch}\n\nPortfolio: ${portfolio || 'Not provided'}\n\n---\n🚀 Applied via QuestWork\nWeb3 Freelance Network | t.me/Questworkbot\nquestworkio.netlify.app`
         })
       })
-      setApplied(true)
-setShowApply(false)
-setPitch('')
-setPortfolio('')
-haptic('heavy')
 
-if (gig.poster_tg_id) {
-  await fetch('https://questwork.up.railway.app/api/notify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: gig.poster_tg_id,
-      message: `🔥 <b>New Application!</b>\n\n<b>Gig:</b> ${gig.title}\n<b>From:</b> @${tgUser?.username || 'someone'}\n<b>Name:</b> ${tgUser?.first_name || 'Unknown'}\n\n<b>Pitch:</b> ${pitch}\n\n<a href="https://questworkio.netlify.app">Open QuestWork →</a>`
-    })
-  })
-}
+      if (gig.poster_tg_id) {
+        await fetch(`${API}/api/notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: gig.poster_tg_id,
+            message: `🔥 <b>New Application!</b>\n\n<b>Gig:</b> ${gig.title}\n<b>From:</b> @${tgUser?.username || 'someone'}\n<b>Name:</b> ${tgUser?.first_name || 'Unknown'}\n\n<b>Pitch:</b> ${pitch}\n\n<a href="https://questworkio.netlify.app">Open QuestWork →</a>`
+          })
+        })
+      }
+
+      setApplied(true)
+      setShowApply(false)
+      setPitch('')
+      setPortfolio('')
+      haptic('heavy')
     } catch (err) {
       console.error(err)
       alert('Error submitting. Please try again.')
@@ -445,15 +532,19 @@ if (gig.poster_tg_id) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Your Pitch</div>
               <button
-                onClick={() => { haptic('medium'); alert('🔒 Upgrade to Premium to use AI Pitch Writer!') }}
+                onClick={handleAIPitch}
+                disabled={generatingPitch}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '4px',
                   padding: '4px 10px', borderRadius: '8px',
-                  background: 'rgba(0,0,0,0.06)',
+                  background: isPremium ? 'rgba(245,200,66,0.1)' : 'rgba(0,0,0,0.06)',
                   border: `1px solid ${colors.border}`,
-                  color: colors.text2, fontSize: '11px', fontWeight: '600',
+                  color: isPremium ? '#F5C842' : colors.text2,
+                  fontSize: '11px', fontWeight: '600',
                   cursor: 'pointer'
-                }}>🔒 ✨ AI Write</button>
+                }}>
+                {generatingPitch ? '⏳ Writing...' : '🔒 ✨ AI Write'}
+              </button>
             </div>
             <textarea
               value={pitch}
@@ -534,7 +625,7 @@ function GigsPage({ colors, dark, tgUser }) {
   useState(() => {
     const loadGigs = async () => {
       try {
-        const res = await fetch('https://questwork.up.railway.app/api/gigs')
+        const res = await fetch(`${API}/api/gigs`)
         const data = await res.json()
         setDbGigs(data)
       } catch (err) {
@@ -580,6 +671,7 @@ function PostPage({ colors, dark, tgUser }) {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [customCategory, setCustomCategory] = useState('')
+  const [generatingDesc, setGeneratingDesc] = useState(false)
   const [form, setForm] = useState({
     title: '', category: 'Community Management',
     description: '', pay_usdt: '',
@@ -587,6 +679,30 @@ function PostPage({ colors, dark, tgUser }) {
   })
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+
+  const handleAIDescription = async () => {
+    haptic('medium')
+    if (!form.title) {
+      alert('Please enter a role title first!')
+      return
+    }
+    setGeneratingDesc(true)
+    try {
+      const res = await fetch(`${API}/api/ai/gig`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          basic_info: `${form.title} at a Web3 company, budget: ${form.pay_usdt || 'negotiable'}, duration: ${form.duration}, region: ${form.region}`
+        })
+      })
+      const data = await res.json()
+      setForm({ ...form, description: data.description })
+      haptic('heavy')
+    } catch (err) {
+      alert('Error generating description. Please try again.')
+    }
+    setGeneratingDesc(false)
+  }
 
   const handleSubmit = async () => {
     if (!form.title || !form.description || !form.pay_usdt) {
@@ -598,7 +714,7 @@ function PostPage({ colors, dark, tgUser }) {
     setLoading(true)
     const finalCategory = form.category === 'Other' ? customCategory : form.category
     try {
-      await fetch('https://questwork.up.railway.app/api/gigs', {
+      await fetch(`${API}/api/gigs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -661,8 +777,21 @@ function PostPage({ colors, dark, tgUser }) {
           )}
         </div>
         <div>
-          <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Description *</div>
-          <textarea name="description" value={form.description} onChange={handleChange} placeholder="Describe the role..." style={{ ...input, height: '100px', resize: 'none' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Description *</div>
+            <button
+              onClick={handleAIDescription}
+              disabled={generatingDesc}
+              style={{
+                padding: '4px 10px', borderRadius: '8px',
+                background: colors.accentBg, border: `1px solid ${colors.accentBorder}`,
+                color: colors.accent, fontSize: '11px', fontWeight: '600',
+                cursor: 'pointer'
+              }}>
+              {generatingDesc ? '⏳ Writing...' : '✨ AI Generate (Free)'}
+            </button>
+          </div>
+          <textarea name="description" value={form.description} onChange={handleChange} placeholder="Describe the role or tap AI Generate..." style={{ ...input, height: '100px', resize: 'none' }} />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <div>
@@ -741,7 +870,6 @@ function ProfilePage({ colors, dark, tgUser }) {
   return (
     <div style={{ padding: '24px 20px', width: '100%', boxSizing: 'border-box' }}>
 
-      {/* PROFILE CARD */}
       <div style={{
         background: colors.card, border: `1px solid ${colors.border}`,
         borderRadius: '20px', padding: '20px', marginBottom: '16px',
@@ -791,7 +919,6 @@ function ProfilePage({ colors, dark, tgUser }) {
           </div>
         </div>
 
-        {/* AVAILABILITY */}
         <div style={{ marginBottom: '14px' }}>
           <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Availability</div>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -807,13 +934,12 @@ function ProfilePage({ colors, dark, tgUser }) {
           </div>
         </div>
 
-        {/* ABOUT ME */}
         <div style={{ marginBottom: '14px' }}>
           <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>About Me</div>
           <textarea
             value={bio}
             onChange={e => setBio(e.target.value)}
-            placeholder="Tell clients about yourself, your experience and skills..."
+            placeholder="Tell clients about yourself..."
             style={{
               width: '100%', height: '80px', padding: '12px 14px',
               borderRadius: '12px', resize: 'none',
@@ -824,7 +950,6 @@ function ProfilePage({ colors, dark, tgUser }) {
           />
         </div>
 
-        {/* SKILLS */}
         <div style={{ marginBottom: '14px' }}>
           <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Skills</div>
           <input
@@ -840,7 +965,6 @@ function ProfilePage({ colors, dark, tgUser }) {
           />
         </div>
 
-        {/* SAVE */}
         <button onClick={handleSave} style={{
           width: '100%', padding: '13px', borderRadius: '12px',
           background: saved ? 'rgba(52,211,153,0.1)' : colors.btnBg,
@@ -851,11 +975,9 @@ function ProfilePage({ colors, dark, tgUser }) {
         }}>{saved ? '✅ Saved!' : 'Save Profile'}</button>
       </div>
 
-      {/* STATS */}
       <div style={{
         background: colors.card, border: `1px solid ${colors.border}`,
         borderRadius: '16px', overflow: 'hidden', marginBottom: '16px',
-        boxShadow: dark ? 'none' : '0 2px 8px rgba(0,0,0,0.04)'
       }}>
         {[
           { icon: '⭐', label: 'QuestScore', value: '0' },
@@ -875,7 +997,6 @@ function ProfilePage({ colors, dark, tgUser }) {
         ))}
       </div>
 
-      {/* UPGRADE BANNER */}
       <div
         onClick={() => { haptic('medium'); setShowPayment(true) }}
         style={{
@@ -896,11 +1017,9 @@ function ProfilePage({ colors, dark, tgUser }) {
         }}>$15/mo</div>
       </div>
 
-      {/* DIGITAL PRODUCTS */}
       <div style={{
         background: colors.card, border: `1px solid ${colors.border}`,
         borderRadius: '16px', padding: '16px', marginBottom: '20px',
-        boxShadow: dark ? 'none' : '0 2px 8px rgba(0,0,0,0.04)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -916,7 +1035,6 @@ function ProfilePage({ colors, dark, tgUser }) {
         </div>
       </div>
 
-      {/* SECTIONS */}
       {sections.map((section, si) => (
         <div key={si} style={{ marginBottom: '20px' }}>
           <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '10px', paddingLeft: '4px' }}>
@@ -925,7 +1043,6 @@ function ProfilePage({ colors, dark, tgUser }) {
           <div style={{
             background: colors.card, border: `1px solid ${colors.border}`,
             borderRadius: '16px', overflow: 'hidden',
-            boxShadow: dark ? 'none' : '0 2px 8px rgba(0,0,0,0.04)'
           }}>
             {section.items.map((item, ii) => (
               <div
@@ -952,7 +1069,6 @@ function ProfilePage({ colors, dark, tgUser }) {
         <div style={{ fontSize: '11px', color: colors.text2, marginTop: '2px', opacity: 0.6 }}>Web3 Freelance Network</div>
       </div>
 
-      {/* PAYMENT MODAL */}
       {showPayment && (
         <div
           onClick={() => { haptic('light'); setShowPayment(false) }}
