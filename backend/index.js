@@ -151,6 +151,49 @@ app.post('/api/ai/gig', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+// Web3.career API sync
+const fetchWeb3Jobs = async () => {
+  try {
+    const res = await fetch('https://web3.career/api/v1/jobs?token=WXFnYiuMV5ydYG9iHZegWy2pNVFduW2P')
+    const data = await res.json()
+    const jobs = data.jobs || []
 
+    for (const job of jobs) {
+      // Auto categorize
+      const title = (job.title || '').toLowerCase()
+      let category = 'Other'
+      if (title.includes('community') || title.includes('discord') || title.includes('telegram')) category = 'Community Management'
+      else if (title.includes('business') || title.includes('bd') || title.includes('partnership')) category = 'Business Development'
+      else if (title.includes('dev') || title.includes('engineer') || title.includes('solidity') || title.includes('smart contract')) category = 'Dev'
+      else if (title.includes('social') || title.includes('twitter') || title.includes('content') || title.includes('marketing')) category = 'Social'
+
+      await pool.query(
+        `INSERT INTO external_gigs (job_id, title, company, location, salary, apply_url, posted_at, category)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         ON CONFLICT (job_id) DO NOTHING`,
+        [String(job.id), job.title, job.company, job.location, job.salary, job.url, job.date, category]
+      )
+    }
+    console.log('✅ Web3.career jobs synced')
+  } catch (err) {
+    console.error('❌ Sync failed:', err.message)
+  }
+}
+
+// Run on startup and every hour
+fetchWeb3Jobs()
+setInterval(fetchWeb3Jobs, 60 * 60 * 1000)
+
+// Endpoint to get external gigs
+app.get('/api/external-gigs', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM external_gigs ORDER BY posted_at DESC LIMIT 100'
+    )
+    res.json(result.rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => console.log(`QuestWork API running on port ${PORT}`))
