@@ -154,7 +154,12 @@ app.post('/api/ai/gig', async (req, res) => {
 // Web3.career API sync
 const fetchWeb3Jobs = async () => {
   try {
-    const res = await fetch('https://web3.career/api/v1/jobs?token=WXFnYiuMV5ydYG9iHZegWy2pNVFduW2P')
+    const res = await fetch('https://web3.career/api/v1/jobs', {
+  headers: {
+    'Authorization': 'Bearer WXFnYiuMV5ydYG9iHZegWy2pNVFduW2P',
+    'Accept': 'application/json'
+  }
+})
     const data = await res.json()
     const jobs = data.jobs || []
 
