@@ -162,7 +162,8 @@ const fetchWeb3Jobs = async () => {
       }
     })
     const data = await res.json()
-    const jobs = data.jobs || []
+    console.log('API Response:', JSON.stringify(data).slice(0, 500))
+const jobs = data.jobs || data || []
 
     for (const job of jobs) {
       const title = (job.title || '').toLowerCase()
