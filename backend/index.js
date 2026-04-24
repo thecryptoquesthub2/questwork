@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import { neon } from '@neondatabase/serverless'
 import dotenv from 'dotenv'
+import braintree from 'braintree'
 
 dotenv.config()
 
@@ -231,6 +232,145 @@ app.get('/api/users/search', async (req, res) => {
       LIMIT 20
     `
     res.json(users || [])
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+// Braintree setup
+import braintree from 'braintree'
+
+const gateway = new braintree.BraintreeGateway({
+  environment: braintree.Environment.Sandbox,
+  merchantId: process.env.BRAINTREE_MERCHANT_ID,
+  publicKey: process.env.BRAINTREE_PUBLIC_KEY,
+  privateKey: process.env.BRAINTREE_PRIVATE_KEY,
+})
+
+// Get client token
+app.get('/api/braintree/token', async (req, res) => {
+  try {
+    const response = await gateway.clientToken.generate({})
+    res.json({ token: response.clientToken })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Create subscription
+app.post('/api/braintree/subscribe', async (req, res) => {
+  try {
+    const { paymentMethodNonce, tg_id } = req.body
+
+    const result = await gateway.customer.create({
+      paymentMethodNonce,
+    })
+
+    if (!result.success) {
+      return res.status(400).json({ error: result.message })
+    }
+
+    const paymentMethodToken = result.customer.paymentMethods[0].token
+
+    const subscription = await gateway.subscription.create({
+      paymentMethodToken,
+      planId: process.env.BRAINTREE_PLAN_ID,
+    })
+
+    if (!subscription.success) {
+      return res.status(400).json({ error: subscription.message })
+    }
+
+    await sql`
+      UPDATE users SET is_premium = true, subscription_id = ${subscription.subscription.id}
+      WHERE tg_id = ${tg_id}
+    `
+
+    res.json({ success: true, subscriptionId: subscription.subscription.id })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Cancel subscription
+app.post('/api/braintree/cancel', async (req, res) => {
+  try {
+    const { tg_id } = req.body
+    const user = await sql`SELECT subscription_id FROM users WHERE tg_id = ${tg_id}`
+    if (user[0]?.subscription_id) {
+      await gateway.subscription.cancel(user[0].subscription_id)
+      await sql`UPDATE users SET is_premium = false, subscription_id = null WHERE tg_id = ${tg_id}`
+    }
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+// Get Braintree client token
+app.get('/api/braintree/token', async (req, res) => {
+  try {
+    const response = await gateway.clientToken.generate({})
+    res.json({ token: response.clientToken })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Create subscription
+app.post('/api/braintree/subscribe', async (req, res) => {
+  try {
+    const { paymentMethodNonce, tg_id } = req.body
+
+    const result = await gateway.customer.create({
+      paymentMethodNonce,
+    })
+
+    if (!result.success) {
+      return res.status(400).json({ error: result.message })
+    }
+
+    const paymentMethodToken = result.customer.paymentMethods[0].token
+
+    const subscription = await gateway.subscription.create({
+      paymentMethodToken,
+      planId: process.env.BRAINTREE_PLAN_ID,
+    })
+
+    if (!subscription.success) {
+      return res.status(400).json({ error: subscription.message })
+    }
+
+    await sql`
+      UPDATE users SET is_premium = true, subscription_id = ${subscription.subscription.id}
+      WHERE tg_id = ${tg_id}
+    `
+
+    res.json({ success: true, subscriptionId: subscription.subscription.id })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Cancel subscription
+app.post('/api/braintree/cancel', async (req, res) => {
+  try {
+    const { tg_id } = req.body
+    const user = await sql`SELECT subscription_id FROM users WHERE tg_id = ${tg_id}`
+    if (user[0]?.subscription_id) {
+      await gateway.subscription.cancel(user[0].subscription_id)
+      await sql`UPDATE users SET is_premium = false, subscription_id = null WHERE tg_id = ${tg_id}`
+    }
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Admin manual premium override
+app.post('/api/admin/premium', async (req, res) => {
+  try {
+    const { tg_id, is_premium } = req.body
+    await sql`UPDATE users SET is_premium = ${is_premium} WHERE tg_id = ${tg_id}`
+    res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
