@@ -237,7 +237,7 @@ app.get('/api/users/search', async (req, res) => {
   }
 })
 // Braintree setup
-import braintree from 'braintree'
+
 
 const gateway = new braintree.BraintreeGateway({
   environment: braintree.Environment.Sandbox,
