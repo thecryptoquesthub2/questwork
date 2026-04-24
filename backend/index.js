@@ -220,5 +220,20 @@ app.get('/api/external-gigs', async (req, res) => {
   }
 })
 
+// Search users
+app.get('/api/users/search', async (req, res) => {
+  try {
+    const { q } = req.query
+    const users = await sql`
+      SELECT * FROM users 
+      WHERE first_name ILIKE ${'%' + q + '%'} 
+      OR tg_username ILIKE ${'%' + q + '%'}
+      LIMIT 20
+    `
+    res.json(users)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => console.log(`QuestWork API running on port ${PORT}`))
