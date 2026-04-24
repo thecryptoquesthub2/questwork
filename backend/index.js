@@ -151,7 +151,29 @@ app.post('/api/ai/gig', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
-
+// Get applications received by a gig poster
+app.get('/api/applications/received/:tg_id', async (req, res) => {
+  try {
+    const { tg_id } = req.params
+    const applications = await sql`
+      SELECT 
+        a.id,
+        a.applicant_tg_id,
+        a.applicant_username,
+        a.pitch,
+        a.status,
+        a.created_at,
+        g.title as gig_title
+      FROM applications a
+      JOIN gigs g ON a.gig_id = g.id
+      WHERE g.poster_tg_id = ${tg_id}
+      ORDER BY a.created_at DESC
+    `
+    res.json(applications)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 // Web3.career API sync
 const fetchWeb3Jobs = async () => {
   try {
