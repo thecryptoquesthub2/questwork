@@ -230,7 +230,7 @@ app.get('/api/users/search', async (req, res) => {
       OR tg_username ILIKE ${'%' + q + '%'}
       LIMIT 20
     `
-    res.json(users)
+    res.json(users || [])
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
