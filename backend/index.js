@@ -297,10 +297,15 @@ bot.onText(/\/upgrade (.+)/, async (msg, match) => {
     bot.sendMessage(msg.chat.id, '❌ You are not authorized.')
     return
   }
-  const targetId = match[1].trim()
+  const username = match[1].trim().replace('@', '')
   try {
-    await sql`UPDATE users SET is_premium = true WHERE tg_id = ${targetId}`
-    bot.sendMessage(msg.chat.id, `✅ User ${targetId} upgraded to Premium!`)
+    const user = await sql`SELECT * FROM users WHERE tg_username = ${username}`
+    if (!user[0]) {
+      bot.sendMessage(msg.chat.id, `❌ User @${username} not found. They must have opened the app first.`)
+      return
+    }
+    await sql`UPDATE users SET is_premium = true WHERE tg_username = ${username}`
+    bot.sendMessage(msg.chat.id, `✅ @${username} upgraded to Premium!`)
   } catch (err) {
     bot.sendMessage(msg.chat.id, `❌ Error: ${err.message}`)
   }
@@ -312,10 +317,10 @@ bot.onText(/\/downgrade (.+)/, async (msg, match) => {
     bot.sendMessage(msg.chat.id, '❌ You are not authorized.')
     return
   }
-  const targetId = match[1].trim()
+  const username = match[1].trim().replace('@', '')
   try {
-    await sql`UPDATE users SET is_premium = false WHERE tg_id = ${targetId}`
-    bot.sendMessage(msg.chat.id, `✅ User ${targetId} downgraded.`)
+    await sql`UPDATE users SET is_premium = false WHERE tg_username = ${username}`
+    bot.sendMessage(msg.chat.id, `✅ @${username} downgraded.`)
   } catch (err) {
     bot.sendMessage(msg.chat.id, `❌ Error: ${err.message}`)
   }
