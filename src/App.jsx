@@ -105,11 +105,11 @@ export default function App() {
   }
 
   const tabs = [
-    { id: 'home', emoji: '⊞', label: 'Home' },
-    { id: 'gigs', emoji: '◈', label: 'Gigs' },
-    { id: 'post', emoji: '⊕', label: 'Post' },
-    { id: 'search', emoji: '⊙', label: 'Search' },
-    { id: 'profile', emoji: '◉', label: 'Profile' },
+    { id: 'home', label: 'Home' },
+    { id: 'gigs', label: 'Gigs' },
+    { id: 'post', label: 'Post' },
+    { id: 'search', label: 'Search' },
+    { id: 'profile', label: 'Profile' },
   ]
 
   return (
@@ -139,8 +139,7 @@ export default function App() {
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: colors.navBg, backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)', borderTop: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '10px 0 24px 0', width: '100vw', boxSizing: 'border-box' }}>
         {tabs.map((tab) => (
           <button key={tab.id} onClick={() => navigate(tab.id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', background: 'none', border: 'none', cursor: 'pointer', color: active === tab.id ? colors.accent : colors.text2, padding: '6px 12px', borderRadius: '12px', transition: 'all 0.2s ease', transform: active === tab.id ? 'scale(1.08)' : 'scale(1)' }}>
-            <span style={{ fontSize: '20px', lineHeight: 1 }}>{tab.emoji}</span>
-            <span style={{ fontSize: '9px', fontWeight: active === tab.id ? '700' : '400' }}>{tab.label}</span>
+            <span style={{ fontSize: '11px', fontWeight: active === tab.id ? '700' : '400' }}>{tab.label}</span>
           </button>
         ))}
       </div>
@@ -175,7 +174,7 @@ function HomePage({ colors, dark, navigate, tgUser }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 16px', borderRadius: '14px', background: colors.surface2, border: `1px solid ${colors.border}` }}>
           <span style={{ fontSize: '15px', opacity: 0.5 }}>🔍</span>
           <input value={search} onChange={e => handleSearch(e.target.value)} placeholder="Search gigs, skills, companies..." style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: colors.text, fontSize: '14px', fontFamily: 'inherit' }} />
-          {search && <button onClick={() => handleSearch('')} style={{ background: 'none', border: 'none', color: colors.text2, fontSize: '16px', cursor: 'pointer', padding: 0 }}>✕</button>}
+          {search && <button onClick={() => handleSearch('')} style={{ background: 'none', border: 'none', color: colors.text2, fontSize: '16px', cursor: 'pointer', padding: 0 }}>x</button>}
         </div>
       </div>
       {search ? (
@@ -183,7 +182,6 @@ function HomePage({ colors, dark, navigate, tgUser }) {
           <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '14px' }}>{filteredGigs.length} result{filteredGigs.length !== 1 ? 's' : ''} for "{search}"</div>
           {filteredGigs.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: colors.text2 }}>
-              <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔍</div>
               <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '6px' }}>No gigs found</div>
               <div style={{ fontSize: '13px' }}>Try different keywords</div>
             </div>
@@ -217,7 +215,7 @@ function HomePage({ colors, dark, navigate, tgUser }) {
           <div style={{ padding: '0 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Featured</div>
-              <button onClick={() => { haptic('light'); navigate('gigs') }} style={{ fontSize: '13px', color: colors.accent, background: 'none', border: 'none', cursor: 'pointer', fontWeight: '500' }}>See all →</button>
+              <button onClick={() => { haptic('light'); navigate('gigs') }} style={{ fontSize: '13px', color: colors.accent, background: 'none', border: 'none', cursor: 'pointer', fontWeight: '500' }}>See all</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {SAMPLE_GIGS.filter(g => g.featured).map(gig => <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser} />)}
@@ -247,7 +245,7 @@ function GigCard({ gig, colors, dark, tgUser }) {
 
   const handleAIPitch = async () => {
     haptic('medium')
-    if (!isPremium) { alert('🔒 Upgrade to Premium to use AI Pitch Writer!'); return }
+    if (!isPremium) { alert('Upgrade to Premium to use AI Pitch Writer!'); return }
     setGeneratingPitch(true)
     try {
       const res = await fetch(`${API}/api/ai/pitch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gig_title: gig.title, gig_company: gig.company, user_skills: '', user_bio: '' }) })
@@ -261,9 +259,9 @@ function GigCard({ gig, colors, dark, tgUser }) {
     if (!pitch.trim()) { haptic('heavy'); alert('Please write a short pitch!'); return }
     haptic('medium'); setApplying(true)
     try {
-      await fetch(`${API}/api/applications`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gig_id: gig.id, applicant_tg_id: tgUser ? String(tgUser.id) : 'unknown', applicant_username: tgUser?.username || 'unknown', pitch: `${pitch}\n\nPortfolio: ${portfolio || 'Not provided'}\n\n---\n🚀 Applied via QuestWork\nWeb3 Freelance Network | t.me/Questworkbot\nquestworkio.netlify.app` }) })
+      await fetch(`${API}/api/applications`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gig_id: gig.id, applicant_tg_id: tgUser ? String(tgUser.id) : 'unknown', applicant_username: tgUser?.username || 'unknown', pitch: `${pitch}\n\nPortfolio: ${portfolio || 'Not provided'}\n\n---\nApplied via QuestWork\nWeb3 Freelance Network | t.me/Questworkbot\nquestworkio.netlify.app` }) })
       if (gig.poster_tg_id) {
-        await fetch(`${API}/api/notify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: gig.poster_tg_id, message: `🔥 <b>New Application!</b>\n\n<b>Gig:</b> ${gig.title}\n<b>From:</b> @${tgUser?.username || 'someone'}\n<b>Name:</b> ${tgUser?.first_name || 'Unknown'}\n\n<b>Pitch:</b> ${pitch}\n\n<a href="https://questworkio.netlify.app">Open QuestWork →</a>` }) })
+        await fetch(`${API}/api/notify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: gig.poster_tg_id, message: `New Application!\n\nGig: ${gig.title}\nFrom: @${tgUser?.username || 'someone'}\nName: ${tgUser?.first_name || 'Unknown'}\n\nPitch: ${pitch}\n\nhttps://questworkio.netlify.app` }) })
       }
       setApplied(true); setShowApply(false); setPitch(''); setPortfolio(''); haptic('heavy')
     } catch (err) { alert('Error submitting.') }
@@ -275,7 +273,7 @@ function GigCard({ gig, colors, dark, tgUser }) {
       <div onMouseDown={() => { setPressed(true); haptic('light') }} onMouseUp={() => setPressed(false)} onMouseLeave={() => setPressed(false)} onTouchStart={() => { setPressed(true); haptic('light') }} onTouchEnd={() => setPressed(false)} style={{ background: colors.card, border: `1px solid ${gig.featured ? colors.accentBorder : colors.border}`, borderRadius: '18px', padding: '16px', boxShadow: dark ? 'none' : '0 2px 12px rgba(0,0,0,0.06)', transform: pressed ? 'scale(0.98)' : 'scale(1)', transition: 'transform 0.15s ease', cursor: 'pointer' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
           <div style={{ flex: 1 }}>
-            {gig.featured && <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10px', fontWeight: '600', letterSpacing: '0.06em', padding: '3px 8px', borderRadius: '6px', background: colors.accentBg, color: colors.accent, marginBottom: '7px', textTransform: 'uppercase' }}>★ Featured</div>}
+            {gig.featured && <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10px', fontWeight: '600', letterSpacing: '0.06em', padding: '3px 8px', borderRadius: '6px', background: colors.accentBg, color: colors.accent, marginBottom: '7px', textTransform: 'uppercase' }}>Featured</div>}
             <div style={{ fontSize: '16px', fontWeight: '600', letterSpacing: '-0.3px', marginBottom: '3px' }}>{gig.title}</div>
             <div style={{ fontSize: '13px', color: colors.text2 }}>{gig.company}</div>
           </div>
@@ -287,7 +285,7 @@ function GigCard({ gig, colors, dark, tgUser }) {
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <div style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '6px', background: colors.surface2, color: colors.text2, fontWeight: '500' }}>{gig.category}</div>
           <button onClick={() => { haptic('medium'); applied ? null : setShowApply(true) }} style={{ flex: 1, padding: '10px', borderRadius: '12px', background: applied ? 'rgba(52,211,153,0.1)' : colors.btnBg, border: applied ? '1px solid rgba(52,211,153,0.3)' : 'none', color: applied ? '#34d399' : colors.btnText, fontSize: '13px', fontWeight: '600', cursor: applied ? 'default' : 'pointer', transition: 'all 0.2s ease' }}>
-            {applied ? '✅ Applied' : 'Apply Now'}
+            {applied ? 'Applied' : 'Apply Now'}
           </button>
         </div>
       </div>
@@ -295,7 +293,7 @@ function GigCard({ gig, colors, dark, tgUser }) {
         <div onClick={() => { haptic('light'); setShowApply(false) }} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', boxSizing: 'border-box' }}>
           <div onClick={e => e.stopPropagation()} style={{ background: dark ? '#1c1c1e' : '#ffffff', borderRadius: '24px', padding: '28px 24px 32px', width: '100%', maxWidth: '420px', border: `1px solid ${colors.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.3)', boxSizing: 'border-box', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: colors.border, margin: '0 auto 20px' }} />
-            <div style={{ fontSize: '20px', fontWeight: '700', marginBottom: '4px', letterSpacing: '-0.3px' }}>Apply for {gig.title}</div>
+            <div style={{ fontSize: '20px', fontWeight: '700', marginBottom: '4px' }}>Apply for {gig.title}</div>
             <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '20px' }}>{gig.company} · {gig.pay}</div>
             {tgUser && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '12px', background: colors.surface2, border: `1px solid ${colors.border}`, marginBottom: '16px' }}>
@@ -309,7 +307,7 @@ function GigCard({ gig, colors, dark, tgUser }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Your Pitch</div>
               <button onClick={handleAIPitch} disabled={generatingPitch} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '8px', background: 'rgba(0,0,0,0.06)', border: `1px solid ${colors.border}`, color: colors.text2, fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
-                {generatingPitch ? '⏳ Writing...' : '🔒 ✨ AI Write'}
+                {generatingPitch ? 'Writing...' : 'AI Write (Premium)'}
               </button>
             </div>
             <textarea value={pitch} onChange={e => setPitch(e.target.value)} placeholder="Tell them why you're the perfect fit..." style={{ width: '100%', height: '100px', padding: '14px', borderRadius: '12px', resize: 'none', background: dark ? 'rgba(44,44,46,0.8)' : 'rgba(230,230,235,0.6)', border: `1px solid ${colors.border}`, color: colors.text, fontSize: '15px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
@@ -318,11 +316,11 @@ function GigCard({ gig, colors, dark, tgUser }) {
               <input type="text" value={portfolio} onChange={e => setPortfolio(e.target.value)} placeholder="https://your-portfolio.com" style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', background: dark ? 'rgba(44,44,46,0.8)' : 'rgba(230,230,235,0.6)', border: `1px solid ${colors.border}`, color: colors.text, fontSize: '14px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
             </div>
             <div style={{ marginTop: '12px', padding: '10px 12px', borderRadius: '10px', background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${colors.border}`, fontSize: '11px', color: colors.text2, lineHeight: 1.6 }}>
-              🚀 Your application will be sent with your QuestWork profile signature
+              Your application will be sent with your QuestWork profile signature
             </div>
             <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
               <button onClick={() => { haptic('light'); setShowApply(false) }} style={{ flex: 1, padding: '14px', borderRadius: '12px', background: colors.surface2, border: `1px solid ${colors.border}`, color: colors.text, fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-              <button onClick={handleApply} disabled={applying} style={{ flex: 2, padding: '14px', borderRadius: '12px', background: applying ? colors.surface2 : colors.btnBg, border: 'none', color: applying ? colors.text2 : colors.btnText, fontSize: '15px', fontWeight: '700', cursor: applying ? 'not-allowed' : 'pointer' }}>{applying ? 'Submitting...' : 'Submit →'}</button>
+              <button onClick={handleApply} disabled={applying} style={{ flex: 2, padding: '14px', borderRadius: '12px', background: applying ? colors.surface2 : colors.btnBg, border: 'none', color: applying ? colors.text2 : colors.btnText, fontSize: '15px', fontWeight: '700', cursor: applying ? 'not-allowed' : 'pointer' }}>{applying ? 'Submitting...' : 'Submit'}</button>
             </div>
           </div>
         </div>
@@ -412,7 +410,7 @@ function PostPage({ colors, dark, tgUser }) {
     <div style={{ padding: '24px 20px', width: '100%', boxSizing: 'border-box' }}>
       <div style={{ fontSize: '24px', fontWeight: '700', letterSpacing: '-0.5px', marginBottom: '6px' }}>Post a Gig</div>
       <div style={{ fontSize: '14px', color: colors.text2, marginBottom: '24px' }}>Find the perfect Web3 talent</div>
-      {success && <div style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: '12px', padding: '14px', marginBottom: '20px', color: '#34d399', fontSize: '14px', textAlign: 'center' }}>✅ Gig posted successfully!</div>}
+      {success && <div style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: '12px', padding: '14px', marginBottom: '20px', color: '#34d399', fontSize: '14px', textAlign: 'center' }}>Gig posted successfully!</div>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         <div>
           <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Role Title *</div>
@@ -428,7 +426,7 @@ function PostPage({ colors, dark, tgUser }) {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Description *</div>
-            <button onClick={handleAIDescription} disabled={generatingDesc} style={{ padding: '4px 10px', borderRadius: '8px', background: colors.accentBg, border: `1px solid ${colors.accentBorder}`, color: colors.accent, fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>{generatingDesc ? '⏳ Writing...' : '✨ AI Generate (Free)'}</button>
+            <button onClick={handleAIDescription} disabled={generatingDesc} style={{ padding: '4px 10px', borderRadius: '8px', background: colors.accentBg, border: `1px solid ${colors.accentBorder}`, color: colors.accent, fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>{generatingDesc ? 'Writing...' : 'AI Generate (Free)'}</button>
           </div>
           <textarea name="description" value={form.description} onChange={handleChange} placeholder="Describe the role or tap AI Generate..." style={{ ...input, height: '100px', resize: 'none' }} />
         </div>
@@ -450,7 +448,7 @@ function PostPage({ colors, dark, tgUser }) {
             <option>Global</option><option>Africa</option><option>MENA</option><option>Remote</option>
           </select>
         </div>
-        <button onClick={handleSubmit} disabled={loading} style={{ width: '100%', padding: '16px', borderRadius: '14px', marginTop: '8px', background: loading ? colors.surface2 : colors.btnBg, border: 'none', color: loading ? colors.text2 : colors.btnText, fontSize: '16px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer' }}>{loading ? 'Posting...' : 'Post Gig →'}</button>
+        <button onClick={handleSubmit} disabled={loading} style={{ width: '100%', padding: '16px', borderRadius: '14px', marginTop: '8px', background: loading ? colors.surface2 : colors.btnBg, border: 'none', color: loading ? colors.text2 : colors.btnText, fontSize: '16px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer' }}>{loading ? 'Posting...' : 'Post Gig'}</button>
       </div>
     </div>
   )
@@ -502,18 +500,17 @@ function SearchPage({ colors, dark, tgUser }) {
       <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
         {['gigs', 'users'].map(m => (
           <button key={m} onClick={() => handleModeSwitch(m)} style={{ flex: 1, padding: '11px', borderRadius: '12px', background: mode === m ? colors.btnBg : colors.surface2, border: `1px solid ${mode === m ? colors.btnBg : colors.border}`, color: mode === m ? colors.btnText : colors.text2, fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
-            {m === 'gigs' ? '💼 Gigs' : '👥 Freelancers'}
+            {m === 'gigs' ? 'Gigs' : 'Freelancers'}
           </button>
         ))}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 16px', borderRadius: '14px', background: colors.surface2, border: `1px solid ${colors.border}`, marginBottom: '20px' }}>
         <span style={{ fontSize: '15px', opacity: 0.5 }}>🔍</span>
         <input value={query} onChange={e => handleSearch(e.target.value)} placeholder={mode === 'gigs' ? 'Search gigs, companies, categories...' : 'Search by name or username...'} style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: colors.text, fontSize: '14px', fontFamily: 'inherit' }} />
-        {query && <button onClick={() => handleSearch('')} style={{ background: 'none', border: 'none', color: colors.text2, fontSize: '16px', cursor: 'pointer', padding: 0 }}>✕</button>}
+        {query && <button onClick={() => handleSearch('')} style={{ background: 'none', border: 'none', color: colors.text2, fontSize: '16px', cursor: 'pointer', padding: 0 }}>x</button>}
       </div>
       {!query && (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: colors.text2 }}>
-          <div style={{ fontSize: '32px', marginBottom: '12px' }}>{mode === 'gigs' ? '💼' : '👥'}</div>
           <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '6px' }}>{mode === 'gigs' ? 'Search Web3 Gigs' : 'Find Freelancers'}</div>
           <div style={{ fontSize: '13px' }}>{mode === 'gigs' ? 'Search by title, company or category' : 'Search by name or username'}</div>
         </div>
@@ -524,7 +521,6 @@ function SearchPage({ colors, dark, tgUser }) {
           <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '14px' }}>{results.length} result{results.length !== 1 ? 's' : ''} for "{query}"</div>
           {results.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: colors.text2 }}>
-              <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔍</div>
               <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '6px' }}>No gigs found</div>
               <div style={{ fontSize: '13px' }}>Try different keywords</div>
             </div>
@@ -540,7 +536,6 @@ function SearchPage({ colors, dark, tgUser }) {
           <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '14px' }}>{users.length} freelancer{users.length !== 1 ? 's' : ''} found</div>
           {users.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: colors.text2 }}>
-              <div style={{ fontSize: '32px', marginBottom: '12px' }}>👥</div>
               <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '6px' }}>No freelancers found</div>
               <div style={{ fontSize: '13px' }}>Try a different name or username</div>
             </div>
@@ -585,7 +580,6 @@ function ApplicationsReceived({ colors, dark, tgUser }) {
   if (loading) return <div style={{ textAlign: 'center', padding: '30px', color: colors.text2 }}>Loading applications...</div>
   if (applications.length === 0) return (
     <div style={{ textAlign: 'center', padding: '40px 20px', color: colors.text2 }}>
-      <div style={{ fontSize: '32px', marginBottom: '12px' }}>📭</div>
       <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '6px' }}>No applications yet</div>
       <div style={{ fontSize: '13px' }}>When someone applies to your gigs, they will appear here</div>
     </div>
@@ -602,14 +596,14 @@ function ApplicationsReceived({ colors, dark, tgUser }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', background: 'rgba(251,191,36,0.1)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)', fontWeight: '600', textTransform: 'uppercase' }}>{app.status || 'Pending'}</div>
-              <span style={{ color: colors.text2, fontSize: '16px' }}>{expanded === i ? '▲' : '▼'}</span>
+              <span style={{ color: colors.text2, fontSize: '16px' }}>{expanded === i ? '-' : '+'}</span>
             </div>
           </div>
           {expanded === i && (
             <div style={{ padding: '0 16px 16px', borderTop: `1px solid ${colors.border}` }}>
               <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px', marginTop: '14px' }}>Pitch</div>
               <div style={{ fontSize: '14px', color: colors.text, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{app.pitch || 'No pitch provided'}</div>
-              <button onClick={() => { haptic('medium'); window.open(`https://t.me/${app.applicant_username}`, '_blank') }} style={{ width: '100%', marginTop: '14px', padding: '11px', borderRadius: '12px', background: colors.btnBg, border: 'none', color: colors.btnText, fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>💬 Message Applicant</button>
+              <button onClick={() => { haptic('medium'); window.open(`https://t.me/${app.applicant_username}`, '_blank') }} style={{ width: '100%', marginTop: '14px', padding: '11px', borderRadius: '12px', background: colors.btnBg, border: 'none', color: colors.btnText, fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Message Applicant</button>
             </div>
           )}
         </div>
@@ -620,6 +614,10 @@ function ApplicationsReceived({ colors, dark, tgUser }) {
 
 function ProfilePage({ colors, dark, tgUser, notificationsOn, setNotificationsOn, cycleTheme, theme }) {
   const [showPayment, setShowPayment] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState('card')
+  const [processing, setProcessing] = useState(false)
+  const [paymentError, setPaymentError] = useState('')
+  const [dropinInstance, setDropinInstance] = useState(null)
   const [bio, setBio] = useState(() => localStorage.getItem('qw_bio') || '')
   const [skills, setSkills] = useState(() => localStorage.getItem('qw_skills') || '')
   const [availability, setAvailability] = useState(() => localStorage.getItem('qw_availability') || 'Available')
@@ -629,6 +627,30 @@ function ProfilePage({ colors, dark, tgUser, notificationsOn, setNotificationsOn
   const [activeTab, setActiveTab] = useState('profile')
   const [lastSeen] = useState(getLastSeen())
   const isPremium = false
+
+  useEffect(() => {
+    if (showPayment && paymentMethod === 'card') {
+      const initDropin = async () => {
+        try {
+          if (dropinInstance) {
+            await dropinInstance.teardown()
+            setDropinInstance(null)
+          }
+          const tokenRes = await fetch(`${API}/api/braintree/token`)
+          const { token } = await tokenRes.json()
+          const dropin = await import('braintree-web/dropin')
+const instance = await dropin.create({
+  authorization: token,
+  container: '#dropin-container'
+})
+          setDropinInstance(instance)
+        } catch (err) {
+          console.error('Dropin init error:', err)
+        }
+      }
+      setTimeout(initDropin, 300)
+    }
+  }, [showPayment, paymentMethod])
 
   const handleSave = () => {
     haptic('heavy')
@@ -646,17 +668,17 @@ function ProfilePage({ colors, dark, tgUser, notificationsOn, setNotificationsOn
 
   const sections = [
     { title: 'Preferences', items: [
-      { icon: '🎨', label: 'Appearance', value: theme === 'dark' ? 'Dark' : 'Light', arrow: true, action: () => cycleTheme() },
-      { icon: '🔔', label: 'Notifications', value: notificationsOn ? 'On' : 'Off', arrow: true, action: () => setNotificationsOn(!notificationsOn) },
+      { icon: 'Appearance', label: 'Appearance', value: theme === 'dark' ? 'Dark' : 'Light', arrow: true, action: () => cycleTheme() },
+      { icon: 'Notifications', label: 'Notifications', value: notificationsOn ? 'On' : 'Off', arrow: true, action: () => setNotificationsOn(!notificationsOn) },
     ]},
     { title: 'Help', items: [
-      { icon: '💬', label: 'Support', value: '', arrow: true, action: () => { haptic('light'); window.open('https://t.me/QuestWorkSupport') } },
-      { icon: 'ℹ️', label: 'Information', value: '', arrow: true },
-      { icon: '🔒', label: 'Privacy Policy', value: '', arrow: true },
-      { icon: '📋', label: 'Terms & Conditions', value: '', arrow: true },
+      { label: 'Support', value: '', arrow: true, action: () => { haptic('light'); window.open('https://t.me/QuestWorkSupport') } },
+      { label: 'Information', value: '', arrow: true },
+      { label: 'Privacy Policy', value: '', arrow: true },
+      { label: 'Terms & Conditions', value: '', arrow: true },
     ]},
     { title: 'QuestWork Social', items: [
-      { icon: '📸', label: 'Instagram', value: '@questwork.io', arrow: true, action: () => { haptic('light'); window.open('https://www.instagram.com/questwork.io') } },
+      { label: 'Instagram', value: '@questwork.io', arrow: true, action: () => { haptic('light'); window.open('https://www.instagram.com/questwork.io') } },
     ]}
   ]
 
@@ -673,11 +695,11 @@ function ProfilePage({ colors, dark, tgUser, notificationsOn, setNotificationsOn
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '18px', fontWeight: '700', letterSpacing: '-0.3px' }}>{displayName}</div>
             <div style={{ fontSize: '13px', color: colors.text2, marginTop: '2px' }}>@{displayUsername}</div>
-            <div style={{ fontSize: '11px', color: colors.text2, marginTop: '2px' }}>🕐 Active at {lastSeen}</div>
+            <div style={{ fontSize: '11px', color: colors.text2, marginTop: '2px' }}>Active at {lastSeen}</div>
             <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
-              <div style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: isPremium ? 'rgba(245,200,66,0.15)' : colors.accentBg, color: isPremium ? '#F5C842' : colors.accent, fontWeight: '600', border: `1px solid ${colors.accentBorder}` }}>{isPremium ? '👑 Premium' : '🆓 Free Plan'}</div>
+              <div style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: isPremium ? 'rgba(245,200,66,0.15)' : colors.accentBg, color: isPremium ? '#F5C842' : colors.accent, fontWeight: '600', border: `1px solid ${colors.accentBorder}` }}>{isPremium ? 'Premium' : 'Free Plan'}</div>
               <div style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: availability === 'Available' ? 'rgba(52,211,153,0.1)' : colors.surface2, color: availability === 'Available' ? '#34d399' : colors.text2, fontWeight: '500', border: `1px solid ${availability === 'Available' ? 'rgba(52,211,153,0.3)' : colors.border}` }}>
-                {availability === 'Available' ? '🟢 Available' : availability === 'Busy' ? '🔴 Busy' : '🟡 Open to Offers'}
+                {availability === 'Available' ? 'Available' : availability === 'Busy' ? 'Busy' : 'Open to Offers'}
               </div>
             </div>
           </div>
@@ -701,7 +723,7 @@ function ProfilePage({ colors, dark, tgUser, notificationsOn, setNotificationsOn
         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
           {['profile', 'applications'].map(tab => (
             <button key={tab} onClick={() => { haptic('light'); setActiveTab(tab) }} style={{ flex: 1, padding: '9px', borderRadius: '10px', fontSize: '12px', fontWeight: '600', background: activeTab === tab ? colors.btnBg : colors.surface2, border: `1px solid ${activeTab === tab ? colors.btnBg : colors.border}`, color: activeTab === tab ? colors.btnText : colors.text2, cursor: 'pointer' }}>
-              {tab === 'applications' ? '📬 Applications' : '👤 Edit Profile'}
+              {tab === 'applications' ? 'Applications Received' : 'Edit Profile'}
             </button>
           ))}
         </div>
@@ -721,10 +743,10 @@ function ProfilePage({ colors, dark, tgUser, notificationsOn, setNotificationsOn
               <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Tell clients about yourself..." style={{ width: '100%', height: '80px', padding: '12px 14px', borderRadius: '12px', resize: 'none', background: colors.surface2, border: `1px solid ${colors.border}`, color: colors.text, fontSize: '14px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
             </div>
             <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Skills <span style={{ fontSize: '10px', fontWeight: '400' }}>(comma separated)</span></div>
+              <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Skills (comma separated)</div>
               <input value={skills} onChange={e => setSkills(e.target.value)} placeholder="e.g. Community Management, BD, Writing..." style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', background: colors.surface2, border: `1px solid ${colors.border}`, color: colors.text, fontSize: '14px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
             </div>
-            <button onClick={handleSave} style={{ width: '100%', padding: '13px', borderRadius: '12px', background: saved ? 'rgba(52,211,153,0.1)' : colors.btnBg, border: saved ? '1px solid rgba(52,211,153,0.3)' : 'none', color: saved ? '#34d399' : colors.btnText, fontSize: '14px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s ease' }}>{saved ? '✅ Profile Saved!' : 'Save Profile'}</button>
+            <button onClick={handleSave} style={{ width: '100%', padding: '13px', borderRadius: '12px', background: saved ? 'rgba(52,211,153,0.1)' : colors.btnBg, border: saved ? '1px solid rgba(52,211,153,0.3)' : 'none', color: saved ? '#34d399' : colors.btnText, fontSize: '14px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s ease' }}>{saved ? 'Profile Saved!' : 'Save Profile'}</button>
           </>
         )}
 
@@ -732,9 +754,8 @@ function ProfilePage({ colors, dark, tgUser, notificationsOn, setNotificationsOn
       </div>
 
       <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '16px', overflow: 'hidden', marginBottom: '16px' }}>
-        {[{ icon: '⭐', label: 'QuestScore', value: '0' }, { icon: '💼', label: 'Applications Sent', value: '0' }, { icon: '✅', label: 'Gigs Completed', value: '0' }, { icon: '💰', label: 'Total Earned', value: '$0 USDT' }].map((item, i) => (
+        {[{ label: 'QuestScore', value: '0' }, { label: 'Applications Sent', value: '0' }, { label: 'Gigs Completed', value: '0' }, { label: 'Total Earned', value: '$0 USDT' }].map((item, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderBottom: i < 3 ? `1px solid ${colors.border}` : 'none' }}>
-            <span style={{ fontSize: '18px', width: '24px', textAlign: 'center' }}>{item.icon}</span>
             <span style={{ flex: 1, fontSize: '14px', color: colors.text2 }}>{item.label}</span>
             <span style={{ fontSize: '16px', fontWeight: '700' }}>{item.value}</span>
           </div>
@@ -743,7 +764,7 @@ function ProfilePage({ colors, dark, tgUser, notificationsOn, setNotificationsOn
 
       <div onClick={() => { haptic('medium'); setShowPayment(true) }} style={{ background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${colors.accentBorder}`, borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', cursor: 'pointer' }}>
         <div>
-          <div style={{ fontSize: '14px', fontWeight: '700' }}>✨ Upgrade to Premium</div>
+          <div style={{ fontSize: '14px', fontWeight: '700' }}>Upgrade to Premium</div>
           <div style={{ fontSize: '12px', color: colors.text2, marginTop: '2px' }}>AI features, priority visibility and more</div>
         </div>
         <div style={{ background: colors.btnBg, color: colors.btnText, fontSize: '12px', fontWeight: '700', padding: '8px 14px', borderRadius: '10px' }}>$15/mo</div>
@@ -752,7 +773,7 @@ function ProfilePage({ colors, dark, tgUser, notificationsOn, setNotificationsOn
       <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '16px', padding: '16px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: '15px', fontWeight: '600' }}>📦 Digital Products</div>
+            <div style={{ fontSize: '15px', fontWeight: '600' }}>Digital Products</div>
             <div style={{ fontSize: '12px', color: colors.text2, marginTop: '3px' }}>Courses, guides and more</div>
           </div>
           <div style={{ fontSize: '10px', padding: '4px 10px', borderRadius: '20px', background: 'rgba(96,165,250,0.1)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.2)', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Coming Soon</div>
@@ -765,7 +786,6 @@ function ProfilePage({ colors, dark, tgUser, notificationsOn, setNotificationsOn
           <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '16px', overflow: 'hidden' }}>
             {section.items.map((item, ii) => (
               <div key={ii} onClick={() => { if (item.action) { haptic('light'); item.action() } }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderBottom: ii < section.items.length - 1 ? `1px solid ${colors.border}` : 'none', cursor: item.action ? 'pointer' : 'default' }}>
-                <span style={{ fontSize: '18px', width: '24px', textAlign: 'center' }}>{item.icon}</span>
                 <span style={{ flex: 1, fontSize: '15px', fontWeight: '500' }}>{item.label}</span>
                 {item.value && <span style={{ fontSize: '13px', color: item.label === 'Notifications' ? (notificationsOn ? '#34d399' : colors.text2) : colors.text2 }}>{item.value}</span>}
                 {item.arrow && <span style={{ fontSize: '16px', color: colors.text2 }}>›</span>}
@@ -784,26 +804,74 @@ function ProfilePage({ colors, dark, tgUser, notificationsOn, setNotificationsOn
         <div onClick={() => { haptic('light'); setShowPayment(false) }} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', boxSizing: 'border-box' }}>
           <div onClick={e => e.stopPropagation()} style={{ background: dark ? '#1c1c1e' : '#ffffff', borderRadius: '24px', padding: '28px 24px 32px', width: '100%', maxWidth: '420px', border: `1px solid ${colors.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.3)', boxSizing: 'border-box', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: colors.border, margin: '0 auto 20px' }} />
-            <div style={{ fontSize: '22px', fontWeight: '700', marginBottom: '4px', textAlign: 'center' }}>✨ Go Premium</div>
-            <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '24px', textAlign: 'center' }}>Unlock AI features, priority visibility and more</div>
+            <div style={{ fontSize: '22px', fontWeight: '700', marginBottom: '4px', textAlign: 'center' }}>Go Premium</div>
+            <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '24px', textAlign: 'center' }}>$15/month · Cancel anytime</div>
+
             <div style={{ background: colors.surface2, borderRadius: '14px', padding: '14px', marginBottom: '20px', border: `1px solid ${colors.border}` }}>
-              {['✨ AI Pitch Writer', '🔝 Priority Visibility', '⭐ Premium Badge', '📊 Advanced Analytics', '🤖 AI Job Matching', '💬 Direct Client Invites', '📄 Resume Builder', '🔗 Custom Profile URL', '📝 Unlimited Applications'].map((f, i, arr) => (
+              {['AI Pitch Writer', 'Priority Visibility', 'Premium Badge', 'Advanced Analytics', 'AI Job Matching', 'Direct Client Invites', 'Resume Builder', 'Custom Profile URL', 'Unlimited Applications'].map((f, i, arr) => (
                 <div key={i} style={{ fontSize: '13px', padding: '6px 0', borderBottom: i < arr.length - 1 ? `1px solid ${colors.border}` : 'none', color: colors.text }}>{f}</div>
               ))}
             </div>
-            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-              <span style={{ fontSize: '36px', fontWeight: '800', letterSpacing: '-1px' }}>$15</span>
-              <span style={{ fontSize: '16px', color: colors.text2 }}>/month</span>
+
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+              {['card', 'usdt'].map(m => (
+                <button key={m} onClick={() => setPaymentMethod(m)} style={{ flex: 1, padding: '10px', borderRadius: '12px', background: paymentMethod === m ? colors.btnBg : colors.surface2, border: `1px solid ${paymentMethod === m ? colors.btnBg : colors.border}`, color: paymentMethod === m ? colors.btnText : colors.text2, fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+                  {m === 'card' ? 'Credit Card' : 'USDT'}
+                </button>
+              ))}
             </div>
-            <div style={{ background: colors.surface2, borderRadius: '14px', padding: '16px', marginBottom: '16px', border: `1px solid ${colors.border}` }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Send $15 USDT (TRC20) to:</div>
-              <div style={{ fontSize: '12px', fontFamily: 'monospace', color: colors.text, wordBreak: 'break-all', lineHeight: 1.6 }}>THXAwQnQ22bjq3C862C4yejXcFeEZ8dcJW</div>
-              <button onClick={() => { haptic('medium'); navigator.clipboard.writeText('THXAwQnQ22bjq3C862C4yejXcFeEZ8dcJW'); alert('Address copied!') }} style={{ width: '100%', marginTop: '10px', padding: '10px', borderRadius: '10px', cursor: 'pointer', background: colors.accentBg, border: `1px solid ${colors.accentBorder}`, color: colors.accent, fontSize: '13px', fontWeight: '600' }}>📋 Copy Address</button>
-            </div>
-            <div style={{ background: colors.surface2, borderRadius: '14px', padding: '14px', marginBottom: '16px', border: `1px solid ${colors.border}`, fontSize: '12px', color: colors.text2, lineHeight: 1.6 }}>
-              After sending, DM @QuestWorkSupport with your transaction hash to activate Premium instantly.
-            </div>
-            <button onClick={() => { haptic('medium'); window.open('https://t.me/QuestWorkSupport', '_blank'); setShowPayment(false) }} style={{ width: '100%', padding: '16px', borderRadius: '14px', background: colors.btnBg, border: 'none', color: colors.btnText, fontSize: '16px', fontWeight: '700', cursor: 'pointer' }}>I've Sent Payment →</button>
+
+            {paymentMethod === 'card' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+                <div id="dropin-container"></div>
+                {paymentError && (
+                  <div style={{ fontSize: '13px', color: '#ef4444', padding: '10px 12px', borderRadius: '10px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)' }}>{paymentError}</div>
+                )}
+                <button
+                  onClick={async () => {
+                    if (!dropinInstance) { setPaymentError('Payment form not ready. Please wait.'); return }
+                    setProcessing(true)
+                    setPaymentError('')
+                    try {
+                      const payload = await dropinInstance.requestPaymentMethod()
+                      const res = await fetch(`${API}/api/braintree/subscribe`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentMethodNonce: payload.nonce, tg_id: tgUser ? String(tgUser.id) : null })
+                      })
+                      const data = await res.json()
+                      if (data.success) {
+                        setShowPayment(false)
+                        alert('Welcome to Premium! Your account has been upgraded.')
+                      } else {
+                        setPaymentError(data.error || 'Payment failed. Please try again.')
+                      }
+                    } catch (err) {
+                      setPaymentError('Payment failed. Please check your card details.')
+                    }
+                    setProcessing(false)
+                  }}
+                  style={{ width: '100%', padding: '16px', borderRadius: '14px', background: processing ? colors.surface2 : '#F5C842', border: 'none', color: '#000000', fontSize: '16px', fontWeight: '700', cursor: processing ? 'not-allowed' : 'pointer' }}>
+                  {processing ? 'Processing...' : 'Pay $15/month'}
+                </button>
+                <div style={{ fontSize: '11px', color: colors.text2, textAlign: 'center' }}>Secured by Braintree · Cancel anytime</div>
+              </div>
+            )}
+
+            {paymentMethod === 'usdt' && (
+              <div>
+                <div style={{ background: colors.surface2, borderRadius: '14px', padding: '16px', marginBottom: '16px', border: `1px solid ${colors.border}` }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Send $15 USDT (TRC20) to:</div>
+                  <div style={{ fontSize: '12px', fontFamily: 'monospace', color: colors.text, wordBreak: 'break-all', lineHeight: 1.6 }}>THXAwQnQ22bjq3C862C4yejXcFeEZ8dcJW</div>
+                  <button onClick={() => { haptic('medium'); navigator.clipboard.writeText('THXAwQnQ22bjq3C862C4yejXcFeEZ8dcJW'); alert('Address copied!') }} style={{ width: '100%', marginTop: '10px', padding: '10px', borderRadius: '10px', cursor: 'pointer', background: colors.accentBg, border: `1px solid ${colors.accentBorder}`, color: colors.accent, fontSize: '13px', fontWeight: '600' }}>Copy Address</button>
+                </div>
+                <div style={{ background: colors.surface2, borderRadius: '14px', padding: '14px', marginBottom: '16px', border: `1px solid ${colors.border}`, fontSize: '12px', color: colors.text2, lineHeight: 1.6 }}>
+                  After sending, DM @QuestWorkSupport with your transaction hash to activate Premium instantly.
+                </div>
+                <button onClick={() => { haptic('medium'); window.open('https://t.me/QuestWorkSupport', '_blank'); setShowPayment(false) }} style={{ width: '100%', padding: '16px', borderRadius: '14px', background: colors.btnBg, border: 'none', color: colors.btnText, fontSize: '16px', fontWeight: '700', cursor: 'pointer' }}>I have Sent Payment</button>
+              </div>
+            )}
+
             <button onClick={() => { haptic('light'); setShowPayment(false) }} style={{ width: '100%', padding: '12px', borderRadius: '14px', marginTop: '10px', background: 'none', border: 'none', color: colors.text2, fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
           </div>
         </div>

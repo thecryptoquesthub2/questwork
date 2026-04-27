@@ -289,7 +289,18 @@ app.post('/api/admin/premium', async (req, res) => {
 // Telegram Bot - Admin Commands
 import TelegramBot from 'node-telegram-bot-api'
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true })
+const bot = new TelegramBot(process.env.BOT_TOKEN, { 
+  polling: {
+    autoStart: true,
+    params: {
+      timeout: 10
+    }
+  }
+})
+
+bot.on('polling_error', (err) => {
+  console.log('Bot polling error:', err.code)
+})
 
 bot.onText(/\/upgrade (.+)/, async (msg, match) => {
   const username = match[1].trim().replace('@', '')
