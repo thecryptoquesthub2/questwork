@@ -12,6 +12,13 @@ app.use(express.json())
 
 const sql = neon(process.env.DATABASE_URL)
 
+const gateway = new braintree.BraintreeGateway({
+  environment: braintree.Environment.Sandbox,
+  merchantId: process.env.BRAINTREE_MERCHANT_ID,
+  publicKey: process.env.BRAINTREE_PUBLIC_KEY,
+  privateKey: process.env.BRAINTREE_PRIVATE_KEY,
+})
+
 // Get all gigs
 app.get('/api/gigs', async (req, res) => {
   try {
@@ -79,6 +86,22 @@ app.get('/api/users/:tg_id', async (req, res) => {
   }
 })
 
+// Search users — must be before /api/users/:tg_id
+app.get('/api/users/search', async (req, res) => {
+  try {
+    const { q } = req.query
+    const users = await sql`
+      SELECT * FROM users
+      WHERE first_name ILIKE ${'%' + q + '%'}
+      OR tg_username ILIKE ${'%' + q + '%'}
+      LIMIT 20
+    `
+    res.json(users || [])
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // Send Telegram notification
 app.post('/api/notify', async (req, res) => {
   try {
@@ -87,11 +110,7 @@ app.post('/api/notify', async (req, res) => {
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chat_id,
-        text: message,
-        parse_mode: 'HTML'
-      })
+      body: JSON.stringify({ chat_id, text: message, parse_mode: 'HTML' })
     })
     res.json({ success: true })
   } catch (err) {
@@ -115,7 +134,7 @@ app.post('/api/ai/pitch', async (req, res) => {
         max_tokens: 500,
         messages: [{
           role: 'user',
-          content: `Write a professional and compelling job application pitch for this Web3 role. Job Title: ${gig_title}. Company: ${gig_company}. My Skills: ${user_skills || 'Web3, Community Management, BD'}. My Bio: ${user_bio || 'Experienced Web3 professional'}. Write a 3 paragraph pitch that is professional, specific, and compelling. Do not include subject lines or greetings. Just the pitch paragraphs. Do not use any markdown formatting, no asterisks, no hash symbols, no bold text. Plain text only with simple line breaks between paragraphs.`
+          content: `Write a professional and compelling job application pitch for this Web3 role. Job Title: ${gig_title}. Company: ${gig_company}. My Skills: ${user_skills || 'Web3, Community Management, BD'}. My Bio: ${user_bio || 'Experienced Web3 professional'}. Write a 3 paragraph pitch that is professional, specific, and compelling. Do not include subject lines or greetings. Just the pitch paragraphs. Plain text only with simple line breaks between paragraphs.`
         }]
       })
     })
@@ -142,7 +161,7 @@ app.post('/api/ai/gig', async (req, res) => {
         max_tokens: 500,
         messages: [{
           role: 'user',
-          content: `Write a professional Web3 job description based on this basic info: ${basic_info}. Write a clear professional job description with a role overview of 2 to 3 sentences, then key responsibilities as a simple numbered list, then requirements as a simple numbered list. Keep it concise and Web3 focused. Do not use any markdown formatting, no asterisks, no hash symbols, no bold text. Plain text only with simple line breaks.`
+          content: `Write a professional Web3 job description based on this basic info: ${basic_info}. Write a clear professional job description with a role overview of 2 to 3 sentences, then key responsibilities as a simple numbered list, then requirements as a simple numbered list. Keep it concise and Web3 focused. Plain text only with simple line breaks.`
         }]
       })
     })
@@ -152,18 +171,15 @@ app.post('/api/ai/gig', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
 // Get applications received by a gig poster
 app.get('/api/applications/received/:tg_id', async (req, res) => {
   try {
     const { tg_id } = req.params
     const applications = await sql`
-      SELECT 
-        a.id,
-        a.applicant_tg_id,
-        a.applicant_username,
-        a.pitch,
-        a.status,
-        a.created_at,
+      SELECT
+        a.id, a.applicant_tg_id, a.applicant_username,
+        a.pitch, a.status, a.created_at,
         g.title as gig_title
       FROM applications a
       JOIN gigs g ON a.gig_id = g.id
@@ -175,26 +191,22 @@ app.get('/api/applications/received/:tg_id', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
 // Web3.career API sync
 const fetchWeb3Jobs = async () => {
   try {
     const res = await fetch('https://web3.career/api/v1/jobs?token=WXFnYiuMV5ydYG9iHZegWy2pNVFduW2P', {
-      headers: {
-        'Accept': 'application/json'
-      }
+      headers: { 'Accept': 'application/json' }
     })
     const data = await res.json()
-    console.log('API Response:', JSON.stringify(data).slice(0, 500))
-const jobs = data.jobs || data || []
-
+    const jobs = data.jobs || data || []
     for (const job of jobs) {
       const title = (job.title || '').toLowerCase()
       let category = 'Other'
       if (title.includes('community') || title.includes('discord') || title.includes('telegram')) category = 'Community Management'
       else if (title.includes('business') || title.includes('bd') || title.includes('partnership')) category = 'Business Development'
-      else if (title.includes('dev') || title.includes('engineer') || title.includes('solidity') || title.includes('smart contract')) category = 'Dev'
+      else if (title.includes('dev') || title.includes('engineer') || title.includes('solidity')) category = 'Dev'
       else if (title.includes('social') || title.includes('twitter') || title.includes('content') || title.includes('marketing')) category = 'Social'
-
       await sql`
         INSERT INTO external_gigs (job_id, title, company, location, salary, apply_url, posted_at, category)
         VALUES (${String(job.id)}, ${job.title}, ${job.company}, ${job.location}, ${job.salary}, ${job.url}, ${job.date}, ${category})
@@ -207,11 +219,10 @@ const jobs = data.jobs || data || []
   }
 }
 
-// Run on startup and every hour
 fetchWeb3Jobs()
 setInterval(fetchWeb3Jobs, 60 * 60 * 1000)
 
-// Endpoint to get external gigs
+// Get external gigs
 app.get('/api/external-gigs', async (req, res) => {
   try {
     const result = await sql`SELECT * FROM external_gigs ORDER BY posted_at DESC LIMIT 100`
@@ -221,32 +232,7 @@ app.get('/api/external-gigs', async (req, res) => {
   }
 })
 
-// Search users
-app.get('/api/users/search', async (req, res) => {
-  try {
-    const { q } = req.query
-    const users = await sql`
-      SELECT * FROM users 
-      WHERE first_name ILIKE ${'%' + q + '%'} 
-      OR tg_username ILIKE ${'%' + q + '%'}
-      LIMIT 20
-    `
-    res.json(users || [])
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-// Braintree setup
-
-
-const gateway = new braintree.BraintreeGateway({
-  environment: braintree.Environment.Sandbox,
-  merchantId: process.env.BRAINTREE_MERCHANT_ID,
-  publicKey: process.env.BRAINTREE_PUBLIC_KEY,
-  privateKey: process.env.BRAINTREE_PRIVATE_KEY,
-})
-
-// Get client token
+// Braintree: Get client token
 app.get('/api/braintree/token', async (req, res) => {
   try {
     const response = await gateway.clientToken.generate({})
@@ -256,101 +242,26 @@ app.get('/api/braintree/token', async (req, res) => {
   }
 })
 
-// Create subscription
+// Braintree: Create subscription
 app.post('/api/braintree/subscribe', async (req, res) => {
   try {
     const { paymentMethodNonce, tg_id } = req.body
-
-    const result = await gateway.customer.create({
-      paymentMethodNonce,
-    })
-
-    if (!result.success) {
-      return res.status(400).json({ error: result.message })
-    }
-
+    const result = await gateway.customer.create({ paymentMethodNonce })
+    if (!result.success) return res.status(400).json({ error: result.message })
     const paymentMethodToken = result.customer.paymentMethods[0].token
-
     const subscription = await gateway.subscription.create({
       paymentMethodToken,
       planId: process.env.BRAINTREE_PLAN_ID,
     })
-
-    if (!subscription.success) {
-      return res.status(400).json({ error: subscription.message })
-    }
-
-    await sql`
-      UPDATE users SET is_premium = true, subscription_id = ${subscription.subscription.id}
-      WHERE tg_id = ${tg_id}
-    `
-
+    if (!subscription.success) return res.status(400).json({ error: subscription.message })
+    await sql`UPDATE users SET is_premium = true, subscription_id = ${subscription.subscription.id} WHERE tg_id = ${tg_id}`
     res.json({ success: true, subscriptionId: subscription.subscription.id })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
-// Cancel subscription
-app.post('/api/braintree/cancel', async (req, res) => {
-  try {
-    const { tg_id } = req.body
-    const user = await sql`SELECT subscription_id FROM users WHERE tg_id = ${tg_id}`
-    if (user[0]?.subscription_id) {
-      await gateway.subscription.cancel(user[0].subscription_id)
-      await sql`UPDATE users SET is_premium = false, subscription_id = null WHERE tg_id = ${tg_id}`
-    }
-    res.json({ success: true })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-// Get Braintree client token
-app.get('/api/braintree/token', async (req, res) => {
-  try {
-    const response = await gateway.clientToken.generate({})
-    res.json({ token: response.clientToken })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// Create subscription
-app.post('/api/braintree/subscribe', async (req, res) => {
-  try {
-    const { paymentMethodNonce, tg_id } = req.body
-
-    const result = await gateway.customer.create({
-      paymentMethodNonce,
-    })
-
-    if (!result.success) {
-      return res.status(400).json({ error: result.message })
-    }
-
-    const paymentMethodToken = result.customer.paymentMethods[0].token
-
-    const subscription = await gateway.subscription.create({
-      paymentMethodToken,
-      planId: process.env.BRAINTREE_PLAN_ID,
-    })
-
-    if (!subscription.success) {
-      return res.status(400).json({ error: subscription.message })
-    }
-
-    await sql`
-      UPDATE users SET is_premium = true, subscription_id = ${subscription.subscription.id}
-      WHERE tg_id = ${tg_id}
-    `
-
-    res.json({ success: true, subscriptionId: subscription.subscription.id })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// Cancel subscription
+// Braintree: Cancel subscription
 app.post('/api/braintree/cancel', async (req, res) => {
   try {
     const { tg_id } = req.body
@@ -365,7 +276,7 @@ app.post('/api/braintree/cancel', async (req, res) => {
   }
 })
 
-// Admin manual premium override
+// Admin: Manual premium upgrade
 app.post('/api/admin/premium', async (req, res) => {
   try {
     const { tg_id, is_premium } = req.body
@@ -373,6 +284,40 @@ app.post('/api/admin/premium', async (req, res) => {
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
+  }
+})
+// Telegram Bot - Admin Commands
+import TelegramBot from 'node-telegram-bot-api'
+
+const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true })
+
+bot.onText(/\/upgrade (.+)/, async (msg, match) => {
+  const adminId = String(msg.from.id)
+  if (adminId !== process.env.ADMIN_TG_ID) {
+    bot.sendMessage(msg.chat.id, '❌ You are not authorized.')
+    return
+  }
+  const targetId = match[1].trim()
+  try {
+    await sql`UPDATE users SET is_premium = true WHERE tg_id = ${targetId}`
+    bot.sendMessage(msg.chat.id, `✅ User ${targetId} upgraded to Premium!`)
+  } catch (err) {
+    bot.sendMessage(msg.chat.id, `❌ Error: ${err.message}`)
+  }
+})
+
+bot.onText(/\/downgrade (.+)/, async (msg, match) => {
+  const adminId = String(msg.from.id)
+  if (adminId !== process.env.ADMIN_TG_ID) {
+    bot.sendMessage(msg.chat.id, '❌ You are not authorized.')
+    return
+  }
+  const targetId = match[1].trim()
+  try {
+    await sql`UPDATE users SET is_premium = false WHERE tg_id = ${targetId}`
+    bot.sendMessage(msg.chat.id, `✅ User ${targetId} downgraded.`)
+  } catch (err) {
+    bot.sendMessage(msg.chat.id, `❌ Error: ${err.message}`)
   }
 })
 const PORT = process.env.PORT || 3000
