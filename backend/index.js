@@ -292,11 +292,6 @@ import TelegramBot from 'node-telegram-bot-api'
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true })
 
 bot.onText(/\/upgrade (.+)/, async (msg, match) => {
-  const adminId = String(msg.from.id)
-  if (adminId !== process.env.ADMIN_TG_ID) {
-    bot.sendMessage(msg.chat.id, '❌ You are not authorized.')
-    return
-  }
   const username = match[1].trim().replace('@', '')
   try {
     const user = await sql`SELECT * FROM users WHERE tg_username = ${username}`
@@ -312,11 +307,6 @@ bot.onText(/\/upgrade (.+)/, async (msg, match) => {
 })
 
 bot.onText(/\/downgrade (.+)/, async (msg, match) => {
-  const adminId = String(msg.from.id)
-  if (adminId !== process.env.ADMIN_TG_ID) {
-    bot.sendMessage(msg.chat.id, '❌ You are not authorized.')
-    return
-  }
   const username = match[1].trim().replace('@', '')
   try {
     await sql`UPDATE users SET is_premium = false WHERE tg_username = ${username}`
