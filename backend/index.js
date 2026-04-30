@@ -75,18 +75,8 @@ app.post('/api/users', async (req, res) => {
   }
 })
 
-// Get user by tg_id
-app.get('/api/users/:tg_id', async (req, res) => {
-  try {
-    const { tg_id } = req.params
-    const user = await sql`SELECT * FROM users WHERE tg_id = ${tg_id}`
-    res.json(user[0] || null)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// Search users — MUST be before /api/users/:tg_id
+// ⚠️ IMPORTANT: /api/users/search MUST be before /api/users/:tg_id
+// Search users
 app.get('/api/users/search', async (req, res) => {
   try {
     const { q } = req.query
@@ -112,6 +102,7 @@ app.get('/api/users/:tg_id', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
 // Send Telegram notification
 app.post('/api/notify', async (req, res) => {
   try {
@@ -296,10 +287,11 @@ app.post('/api/admin/premium', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
 // Telegram Bot - Admin Commands
 import TelegramBot from 'node-telegram-bot-api'
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, { 
+const bot = new TelegramBot(process.env.BOT_TOKEN, {
   polling: {
     autoStart: true,
     params: {
@@ -336,5 +328,6 @@ bot.onText(/\/downgrade (.+)/, async (msg, match) => {
     bot.sendMessage(msg.chat.id, `❌ Error: ${err.message}`)
   }
 })
+
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => console.log(`QuestWork API running on port ${PORT}`))
