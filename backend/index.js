@@ -86,7 +86,7 @@ app.get('/api/users/:tg_id', async (req, res) => {
   }
 })
 
-// Search users — must be before /api/users/:tg_id
+// Search users — MUST be before /api/users/:tg_id
 app.get('/api/users/search', async (req, res) => {
   try {
     const { q } = req.query
@@ -102,6 +102,16 @@ app.get('/api/users/search', async (req, res) => {
   }
 })
 
+// Get user by tg_id
+app.get('/api/users/:tg_id', async (req, res) => {
+  try {
+    const { tg_id } = req.params
+    const user = await sql`SELECT * FROM users WHERE tg_id = ${tg_id}`
+    res.json(user[0] || null)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 // Send Telegram notification
 app.post('/api/notify', async (req, res) => {
   try {
