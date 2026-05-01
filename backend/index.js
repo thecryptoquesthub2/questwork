@@ -346,5 +346,18 @@ app.get('/api/users/photo/:tg_id', async (req, res) => {
     res.json({ photo_url: null })
   }
 })
+// /start command - sends Mini App launch button
+bot.onText(/\/start/, (msg) => {
+  bot.sendMessage(msg.chat.id, 'Welcome to QuestWork! 🚀\nFind Web3 gigs and get paid in crypto.', {
+    reply_markup: {
+      inline_keyboard: [[
+        {
+          text: '🚀 Open QuestWork',
+          web_app: { url: 'https://questwork-green.vercel.app' }
+        }
+      ]]
+    }
+  })
+})
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => console.log(`QuestWork API running on port ${PORT}`))
