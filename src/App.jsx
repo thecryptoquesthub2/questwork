@@ -9,6 +9,45 @@ const LOGO_SVG = () => (
   </svg>
 )
 
+// Clean SVG tab icons
+const IconHome = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
+    <path d="M9 21V12h6v9"/>
+  </svg>
+)
+
+const IconBriefcase = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="7" width="20" height="14" rx="2"/>
+    <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+    <line x1="12" y1="12" x2="12" y2="12.01"/>
+    <path d="M2 12h20"/>
+  </svg>
+)
+
+const IconPlus = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="12" y1="8" x2="12" y2="16"/>
+    <line x1="8" y1="12" x2="16" y2="12"/>
+  </svg>
+)
+
+const IconSearch = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </svg>
+)
+
+const IconUser = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+    <circle cx="12" cy="7" r="4"/>
+  </svg>
+)
+
 const API = 'https://questwork.up.railway.app'
 
 const SAMPLE_GIGS = [
@@ -40,7 +79,23 @@ function useTheme() {
 }
 
 function ThemeIcon({ theme }) {
-  return <span style={{ fontSize: '16px' }}>{theme === 'dark' ? '☀️' : '🌙'}</span>
+  return theme === 'dark' ? (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="5"/>
+      <line x1="12" y1="1" x2="12" y2="3"/>
+      <line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/>
+      <line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+  ) : (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+    </svg>
+  )
 }
 
 function getLastSeen() {
@@ -48,11 +103,20 @@ function getLastSeen() {
   return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+const tabs = [
+  { id: 'home',    label: 'Home',    Icon: IconHome },
+  { id: 'gigs',    label: 'Gigs',    Icon: IconBriefcase },
+  { id: 'post',    label: 'Post',    Icon: IconPlus },
+  { id: 'search',  label: 'Search',  Icon: IconSearch },
+  { id: 'profile', label: 'Profile', Icon: IconUser },
+]
+
 export default function App() {
   const { theme, resolved, cycleTheme } = useTheme()
   const [active, setActive] = useState('home')
   const [animating, setAnimating] = useState(false)
   const [tgUser, setTgUser] = useState(null)
+  const [isPremium, setIsPremium] = useState(false)
   const [notificationsOn, setNotificationsOn] = useState(() => localStorage.getItem('qw_notifications') !== 'off')
   const dark = resolved === 'dark'
 
@@ -65,14 +129,29 @@ export default function App() {
     document.body.style.padding = '0'
     document.documentElement.style.margin = '0'
     document.documentElement.style.padding = '0'
+
     const user = window.Telegram?.WebApp?.initDataUnsafe?.user
+    const userId = String(user?.id || '')
     if (user) {
       setTgUser(user)
+      // Register/update user in DB
       fetch(`${API}/api/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tg_id: String(user.id), tg_username: user.username || '', first_name: user.first_name || '', last_name: user.last_name || '' })
+        body: JSON.stringify({
+          tg_id: userId,
+          tg_username: user.username || '',
+          first_name: user.first_name || '',
+          last_name: user.last_name || ''
+        })
       })
+      // Load premium status from DB
+      fetch(`${API}/api/users/${userId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data?.is_premium) setIsPremium(true)
+        })
+        .catch(() => {})
     }
   }, [])
 
@@ -104,17 +183,10 @@ export default function App() {
     setTimeout(() => { setActive(tab); setAnimating(false) }, 150)
   }
 
-  const tabs = [
-    { id: 'home', label: 'Home' },
-    { id: 'gigs', label: 'Gigs' },
-    { id: 'post', label: 'Post' },
-    { id: 'search', label: 'Search' },
-    { id: 'profile', label: 'Profile' },
-  ]
-
   return (
     <div style={{ backgroundColor: colors.bg, minHeight: '100vh', width: '100vw', maxWidth: '100vw', margin: 0, padding: 0, color: colors.text, fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif', WebkitFontSmoothing: 'antialiased', position: 'relative', overflowX: 'hidden', transition: 'background-color 0.3s ease, color 0.3s ease', boxSizing: 'border-box' }}>
 
+      {/* Header */}
       <div style={{ position: 'sticky', top: 0, zIndex: 50, padding: '16px 20px 12px', background: dark ? 'rgba(0,0,0,0.92)' : 'rgba(242,242,247,0.92)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)', borderBottom: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ color: colors.text }}><LOGO_SVG /></div>
@@ -123,31 +195,37 @@ export default function App() {
             <div style={{ fontSize: '9px', color: colors.text2, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '1px' }}>Freelance Network</div>
           </div>
         </div>
-        <button onClick={cycleTheme} style={{ width: '36px', height: '36px', borderRadius: '50%', background: colors.surface2, border: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+        <button onClick={cycleTheme} style={{ width: '36px', height: '36px', borderRadius: '50%', background: colors.surface2, border: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: colors.text }}>
           <ThemeIcon theme={theme} />
         </button>
       </div>
 
+      {/* Page content */}
       <div style={{ opacity: animating ? 0 : 1, transform: animating ? 'translateY(6px)' : 'translateY(0)', transition: 'opacity 0.15s ease, transform 0.15s ease', paddingBottom: '80px', position: 'relative', zIndex: 1, width: '100%', boxSizing: 'border-box' }}>
-        {active === 'home' && <HomePage colors={colors} dark={dark} navigate={navigate} tgUser={tgUser} />}
-        {active === 'gigs' && <GigsPage colors={colors} dark={dark} tgUser={tgUser} />}
-        {active === 'post' && <PostPage colors={colors} dark={dark} tgUser={tgUser} />}
-        {active === 'search' && <SearchPage colors={colors} dark={dark} tgUser={tgUser} />}
-        {active === 'profile' && <ProfilePage colors={colors} dark={dark} tgUser={tgUser} notificationsOn={notificationsOn} setNotificationsOn={(val) => { setNotificationsOn(val); localStorage.setItem('qw_notifications', val ? 'on' : 'off') }} cycleTheme={cycleTheme} theme={theme} />}
+        {active === 'home'    && <HomePage    colors={colors} dark={dark} navigate={navigate} tgUser={tgUser} isPremium={isPremium} />}
+        {active === 'gigs'    && <GigsPage    colors={colors} dark={dark} tgUser={tgUser} isPremium={isPremium} />}
+        {active === 'post'    && <PostPage    colors={colors} dark={dark} tgUser={tgUser} />}
+        {active === 'search'  && <SearchPage  colors={colors} dark={dark} tgUser={tgUser} />}
+        {active === 'profile' && <ProfilePage colors={colors} dark={dark} tgUser={tgUser} isPremium={isPremium} setIsPremium={setIsPremium} notificationsOn={notificationsOn} setNotificationsOn={(val) => { setNotificationsOn(val); localStorage.setItem('qw_notifications', val ? 'on' : 'off') }} cycleTheme={cycleTheme} theme={theme} />}
       </div>
 
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: colors.navBg, backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)', borderTop: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '10px 0 24px 0', width: '100vw', boxSizing: 'border-box' }}>
-        {tabs.map((tab) => (
-          <button key={tab.id} onClick={() => navigate(tab.id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', background: 'none', border: 'none', cursor: 'pointer', color: active === tab.id ? colors.accent : colors.text2, padding: '6px 12px', borderRadius: '12px', transition: 'all 0.2s ease', transform: active === tab.id ? 'scale(1.08)' : 'scale(1)' }}>
-            <span style={{ fontSize: '11px', fontWeight: active === tab.id ? '700' : '400' }}>{tab.label}</span>
-          </button>
-        ))}
+      {/* Bottom nav with SVG icons */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: colors.navBg, backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)', borderTop: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '8px 0 24px 0', width: '100vw', boxSizing: 'border-box' }}>
+        {tabs.map(({ id, label, Icon }) => {
+          const isActive = active === id
+          return (
+            <button key={id} onClick={() => navigate(id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer', color: isActive ? colors.accent : colors.text2, padding: '4px 12px', borderRadius: '12px', transition: 'all 0.2s ease', transform: isActive ? 'scale(1.08)' : 'scale(1)' }}>
+              <Icon size={22} />
+              <span style={{ fontSize: '10px', fontWeight: isActive ? '700' : '400', letterSpacing: '0.02em' }}>{label}</span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
 }
 
-function HomePage({ colors, dark, navigate, tgUser }) {
+function HomePage({ colors, dark, navigate, tgUser, isPremium }) {
   const [search, setSearch] = useState('')
   const [filteredGigs, setFilteredGigs] = useState(SAMPLE_GIGS)
 
@@ -172,9 +250,9 @@ function HomePage({ colors, dark, navigate, tgUser }) {
       </div>
       <div style={{ padding: '0 20px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 16px', borderRadius: '14px', background: colors.surface2, border: `1px solid ${colors.border}` }}>
-          <span style={{ fontSize: '15px', opacity: 0.5 }}>🔍</span>
+          <IconSearch size={16} />
           <input value={search} onChange={e => handleSearch(e.target.value)} placeholder="Search gigs, skills, companies..." style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: colors.text, fontSize: '14px', fontFamily: 'inherit' }} />
-          {search && <button onClick={() => handleSearch('')} style={{ background: 'none', border: 'none', color: colors.text2, fontSize: '16px', cursor: 'pointer', padding: 0 }}>x</button>}
+          {search && <button onClick={() => handleSearch('')} style={{ background: 'none', border: 'none', color: colors.text2, fontSize: '16px', cursor: 'pointer', padding: 0 }}>×</button>}
         </div>
       </div>
       {search ? (
@@ -187,7 +265,7 @@ function HomePage({ colors, dark, navigate, tgUser }) {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {filteredGigs.map(gig => <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser} />)}
+              {filteredGigs.map(gig => <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser} isPremium={isPremium} />)}
             </div>
           )}
         </div>
@@ -195,9 +273,9 @@ function HomePage({ colors, dark, navigate, tgUser }) {
         <>
           <div style={{ padding: '0 20px 24px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-              {[{ value: '120+', label: 'Active Gigs', emoji: '💼' }, { value: '500+', label: 'Freelancers', emoji: '🌍' }, { value: '$50K+', label: 'Paid Out', emoji: '💰' }].map((s, i) => (
+              {[{ value: '120+', label: 'Active Gigs', icon: <IconBriefcase size={18}/> }, { value: '500+', label: 'Freelancers', icon: <IconUser size={18}/> }, { value: '$50K+', label: 'Paid Out', icon: <IconPlus size={18}/> }].map((s, i) => (
                 <div key={i} style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '16px', padding: '14px 10px', textAlign: 'center', boxShadow: dark ? 'none' : '0 2px 8px rgba(0,0,0,0.06)' }}>
-                  <div style={{ fontSize: '20px', marginBottom: '4px' }}>{s.emoji}</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px', color: colors.text2 }}>{s.icon}</div>
                   <div style={{ fontSize: '17px', fontWeight: '700' }}>{s.value}</div>
                   <div style={{ fontSize: '10px', color: colors.text2, marginTop: '2px' }}>{s.label}</div>
                 </div>
@@ -218,13 +296,13 @@ function HomePage({ colors, dark, navigate, tgUser }) {
               <button onClick={() => { haptic('light'); navigate('gigs') }} style={{ fontSize: '13px', color: colors.accent, background: 'none', border: 'none', cursor: 'pointer', fontWeight: '500' }}>See all</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {SAMPLE_GIGS.filter(g => g.featured).map(gig => <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser} />)}
+              {SAMPLE_GIGS.filter(g => g.featured).map(gig => <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser} isPremium={isPremium} />)}
             </div>
           </div>
           <div style={{ padding: '24px 20px 0' }}>
             <div style={{ fontSize: '13px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '14px' }}>Latest Gigs</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {SAMPLE_GIGS.filter(g => !g.featured).map(gig => <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser} />)}
+              {SAMPLE_GIGS.filter(g => !g.featured).map(gig => <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser} isPremium={isPremium} />)}
             </div>
           </div>
         </>
@@ -233,7 +311,7 @@ function HomePage({ colors, dark, navigate, tgUser }) {
   )
 }
 
-function GigCard({ gig, colors, dark, tgUser }) {
+function GigCard({ gig, colors, dark, tgUser, isPremium }) {
   const [pressed, setPressed] = useState(false)
   const [showApply, setShowApply] = useState(false)
   const [pitch, setPitch] = useState('')
@@ -241,7 +319,6 @@ function GigCard({ gig, colors, dark, tgUser }) {
   const [applying, setApplying] = useState(false)
   const [applied, setApplied] = useState(false)
   const [generatingPitch, setGeneratingPitch] = useState(false)
-  const isPremium = false
 
   const handleAIPitch = async () => {
     haptic('medium')
@@ -285,7 +362,7 @@ function GigCard({ gig, colors, dark, tgUser }) {
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <div style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '6px', background: colors.surface2, color: colors.text2, fontWeight: '500' }}>{gig.category}</div>
           <button onClick={() => { haptic('medium'); applied ? null : setShowApply(true) }} style={{ flex: 1, padding: '10px', borderRadius: '12px', background: applied ? 'rgba(52,211,153,0.1)' : colors.btnBg, border: applied ? '1px solid rgba(52,211,153,0.3)' : 'none', color: applied ? '#34d399' : colors.btnText, fontSize: '13px', fontWeight: '600', cursor: applied ? 'default' : 'pointer', transition: 'all 0.2s ease' }}>
-            {applied ? 'Applied' : 'Apply Now'}
+            {applied ? 'Applied ✓' : 'Apply Now'}
           </button>
         </div>
       </div>
@@ -306,8 +383,8 @@ function GigCard({ gig, colors, dark, tgUser }) {
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Your Pitch</div>
-              <button onClick={handleAIPitch} disabled={generatingPitch} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '8px', background: 'rgba(0,0,0,0.06)', border: `1px solid ${colors.border}`, color: colors.text2, fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
-                {generatingPitch ? 'Writing...' : 'AI Write (Premium)'}
+              <button onClick={handleAIPitch} disabled={generatingPitch} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '8px', background: isPremium ? colors.accentBg : 'rgba(0,0,0,0.06)', border: `1px solid ${colors.border}`, color: isPremium ? colors.accent : colors.text2, fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
+                {generatingPitch ? 'Writing...' : isPremium ? 'AI Write ✦' : 'AI Write (Premium)'}
               </button>
             </div>
             <textarea value={pitch} onChange={e => setPitch(e.target.value)} placeholder="Tell them why you're the perfect fit..." style={{ width: '100%', height: '100px', padding: '14px', borderRadius: '12px', resize: 'none', background: dark ? 'rgba(44,44,46,0.8)' : 'rgba(230,230,235,0.6)', border: `1px solid ${colors.border}`, color: colors.text, fontSize: '15px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
@@ -329,7 +406,7 @@ function GigCard({ gig, colors, dark, tgUser }) {
   )
 }
 
-function GigsPage({ colors, dark, tgUser }) {
+function GigsPage({ colors, dark, tgUser, isPremium }) {
   const [filter, setFilter] = useState('All')
   const [dbGigs, setDbGigs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -362,7 +439,7 @@ function GigsPage({ colors, dark, tgUser }) {
         <div style={{ textAlign: 'center', padding: '40px', color: colors.text2 }}>Loading gigs...</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {filtered.map(gig => <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser} />)}
+          {filtered.map(gig => <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser} isPremium={isPremium} />)}
         </div>
       )}
     </div>
@@ -505,9 +582,9 @@ function SearchPage({ colors, dark, tgUser }) {
         ))}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 16px', borderRadius: '14px', background: colors.surface2, border: `1px solid ${colors.border}`, marginBottom: '20px' }}>
-        <span style={{ fontSize: '15px', opacity: 0.5 }}>🔍</span>
+        <IconSearch size={16} />
         <input value={query} onChange={e => handleSearch(e.target.value)} placeholder={mode === 'gigs' ? 'Search gigs, companies, categories...' : 'Search by name or username...'} style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: colors.text, fontSize: '14px', fontFamily: 'inherit' }} />
-        {query && <button onClick={() => handleSearch('')} style={{ background: 'none', border: 'none', color: colors.text2, fontSize: '16px', cursor: 'pointer', padding: 0 }}>x</button>}
+        {query && <button onClick={() => handleSearch('')} style={{ background: 'none', border: 'none', color: colors.text2, fontSize: '16px', cursor: 'pointer', padding: 0 }}>×</button>}
       </div>
       {!query && (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: colors.text2 }}>
@@ -526,7 +603,7 @@ function SearchPage({ colors, dark, tgUser }) {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {results.map(gig => <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser} />)}
+              {results.map(gig => <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser} isPremium={false} />)}
             </div>
           )}
         </div>
@@ -596,7 +673,7 @@ function ApplicationsReceived({ colors, dark, tgUser }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', background: 'rgba(251,191,36,0.1)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)', fontWeight: '600', textTransform: 'uppercase' }}>{app.status || 'Pending'}</div>
-              <span style={{ color: colors.text2, fontSize: '16px' }}>{expanded === i ? '-' : '+'}</span>
+              <span style={{ color: colors.text2, fontSize: '16px' }}>{expanded === i ? '−' : '+'}</span>
             </div>
           </div>
           {expanded === i && (
@@ -612,41 +689,35 @@ function ApplicationsReceived({ colors, dark, tgUser }) {
   )
 }
 
-function ProfilePage({ colors, dark, tgUser, notificationsOn, setNotificationsOn, cycleTheme, theme }) {
+function ProfilePage({ colors, dark, tgUser, isPremium, setIsPremium, notificationsOn, setNotificationsOn, cycleTheme, theme }) {
   const [showPayment, setShowPayment] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('card')
   const [processing, setProcessing] = useState(false)
   const [paymentError, setPaymentError] = useState('')
   const [dropinInstance, setDropinInstance] = useState(null)
+
+  const [isEditing, setIsEditing] = useState(false)
   const [bio, setBio] = useState(() => localStorage.getItem('qw_bio') || '')
   const [skills, setSkills] = useState(() => localStorage.getItem('qw_skills') || '')
   const [availability, setAvailability] = useState(() => localStorage.getItem('qw_availability') || 'Available')
-  const [saved, setSaved] = useState(false)
   const [savedBio, setSavedBio] = useState(() => localStorage.getItem('qw_bio') || '')
   const [savedSkills, setSavedSkills] = useState(() => localStorage.getItem('qw_skills') || '')
+  const [savedAvailability, setSavedAvailability] = useState(() => localStorage.getItem('qw_availability') || 'Available')
+  const [saved, setSaved] = useState(false)
+
   const [activeTab, setActiveTab] = useState('profile')
   const [lastSeen] = useState(getLastSeen())
-  const isPremium = false
 
   useEffect(() => {
     if (showPayment && paymentMethod === 'card') {
       const initDropin = async () => {
         try {
-          if (dropinInstance) {
-            await dropinInstance.teardown()
-            setDropinInstance(null)
-          }
+          if (dropinInstance) { await dropinInstance.teardown(); setDropinInstance(null) }
           const tokenRes = await fetch(`${API}/api/braintree/token`)
           const { token } = await tokenRes.json()
-          const dropin = await import('braintree-web/dropin')
-const instance = await dropin.create({
-  authorization: token,
-  container: '#dropin-container'
-})
+          const instance = await window.braintree.dropin.create({ authorization: token, container: '#dropin-container' })
           setDropinInstance(instance)
-        } catch (err) {
-          console.error('Dropin init error:', err)
-        }
+        } catch (err) { console.error('Dropin init error:', err) }
       }
       setTimeout(initDropin, 300)
     }
@@ -657,10 +728,21 @@ const instance = await dropin.create({
     localStorage.setItem('qw_bio', bio)
     localStorage.setItem('qw_skills', skills)
     localStorage.setItem('qw_availability', availability)
-    setSavedBio(bio)
-    setSavedSkills(skills)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    setSavedBio(bio); setSavedSkills(skills); setSavedAvailability(availability)
+    setSaved(true); setIsEditing(false)
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  const handleEdit = () => {
+    haptic('light')
+    setBio(savedBio); setSkills(savedSkills); setAvailability(savedAvailability)
+    setIsEditing(true)
+  }
+
+  const handleCancel = () => {
+    haptic('light')
+    setBio(savedBio); setSkills(savedSkills); setAvailability(savedAvailability)
+    setIsEditing(false)
   }
 
   const displayName = tgUser ? `${tgUser.first_name} ${tgUser.last_name || ''}`.trim() : 'Guest'
@@ -668,8 +750,8 @@ const instance = await dropin.create({
 
   const sections = [
     { title: 'Preferences', items: [
-      { icon: 'Appearance', label: 'Appearance', value: theme === 'dark' ? 'Dark' : 'Light', arrow: true, action: () => cycleTheme() },
-      { icon: 'Notifications', label: 'Notifications', value: notificationsOn ? 'On' : 'Off', arrow: true, action: () => setNotificationsOn(!notificationsOn) },
+      { label: 'Appearance', value: theme === 'dark' ? 'Dark' : 'Light', arrow: true, action: () => cycleTheme() },
+      { label: 'Notifications', value: notificationsOn ? 'On' : 'Off', arrow: true, action: () => setNotificationsOn(!notificationsOn) },
     ]},
     { title: 'Help', items: [
       { label: 'Support', value: '', arrow: true, action: () => { haptic('light'); window.open('https://t.me/QuestWorkSupport') } },
@@ -685,10 +767,12 @@ const instance = await dropin.create({
   return (
     <div style={{ padding: '24px 20px', width: '100%', boxSizing: 'border-box' }}>
 
+      {/* Profile Card */}
       <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '20px', padding: '20px', marginBottom: '16px', boxShadow: dark ? 'none' : '0 2px 12px rgba(0,0,0,0.06)' }}>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
           {tgUser?.photo_url ? (
-            <img src={tgUser.photo_url} style={{ width: '64px', height: '64px', borderRadius: '50%', border: `2px solid ${colors.border}`, objectFit: 'cover', flexShrink: 0 }} />
+            <img src={tgUser.photo_url} style={{ width: '64px', height: '64px', borderRadius: '50%', border: `2px solid ${colors.border}`, objectFit: 'cover', flexShrink: 0 }} alt="avatar" />
           ) : (
             <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', fontWeight: '700', flexShrink: 0, border: `2px solid ${colors.border}` }}>{tgUser ? tgUser.first_name?.[0] : '?'}</div>
           )}
@@ -697,22 +781,24 @@ const instance = await dropin.create({
             <div style={{ fontSize: '13px', color: colors.text2, marginTop: '2px' }}>@{displayUsername}</div>
             <div style={{ fontSize: '11px', color: colors.text2, marginTop: '2px' }}>Active at {lastSeen}</div>
             <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
-              <div style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: isPremium ? 'rgba(245,200,66,0.15)' : colors.accentBg, color: isPremium ? '#F5C842' : colors.accent, fontWeight: '600', border: `1px solid ${colors.accentBorder}` }}>{isPremium ? 'Premium' : 'Free Plan'}</div>
-              <div style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: availability === 'Available' ? 'rgba(52,211,153,0.1)' : colors.surface2, color: availability === 'Available' ? '#34d399' : colors.text2, fontWeight: '500', border: `1px solid ${availability === 'Available' ? 'rgba(52,211,153,0.3)' : colors.border}` }}>
-                {availability === 'Available' ? 'Available' : availability === 'Busy' ? 'Busy' : 'Open to Offers'}
+              <div style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: isPremium ? 'rgba(245,200,66,0.15)' : colors.accentBg, color: isPremium ? '#F5C842' : colors.accent, fontWeight: '600', border: `1px solid ${isPremium ? 'rgba(245,200,66,0.3)' : colors.accentBorder}` }}>
+                {isPremium ? '⭐ Premium' : 'Free Plan'}
+              </div>
+              <div style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: savedAvailability === 'Available' ? 'rgba(52,211,153,0.1)' : colors.surface2, color: savedAvailability === 'Available' ? '#34d399' : colors.text2, fontWeight: '500', border: `1px solid ${savedAvailability === 'Available' ? 'rgba(52,211,153,0.3)' : colors.border}` }}>
+                {savedAvailability}
               </div>
             </div>
           </div>
         </div>
 
-        {savedBio && (
+        {savedBio && !isEditing && (
           <div style={{ marginBottom: '10px', padding: '10px 12px', borderRadius: '10px', background: colors.surface2, border: `1px solid ${colors.border}` }}>
             <div style={{ fontSize: '11px', fontWeight: '600', color: colors.text2, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>About</div>
             <div style={{ fontSize: '13px', color: colors.text, lineHeight: 1.5 }}>{savedBio}</div>
           </div>
         )}
 
-        {savedSkills && (
+        {savedSkills && !isEditing && (
           <div style={{ marginBottom: '14px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             {savedSkills.split(',').map((s, i) => (
               <div key={i} style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '20px', background: colors.accentBg, border: `1px solid ${colors.accentBorder}`, color: colors.accent, fontWeight: '500' }}>{s.trim()}</div>
@@ -722,37 +808,61 @@ const instance = await dropin.create({
 
         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
           {['profile', 'applications'].map(tab => (
-            <button key={tab} onClick={() => { haptic('light'); setActiveTab(tab) }} style={{ flex: 1, padding: '9px', borderRadius: '10px', fontSize: '12px', fontWeight: '600', background: activeTab === tab ? colors.btnBg : colors.surface2, border: `1px solid ${activeTab === tab ? colors.btnBg : colors.border}`, color: activeTab === tab ? colors.btnText : colors.text2, cursor: 'pointer' }}>
-              {tab === 'applications' ? 'Applications Received' : 'Edit Profile'}
+            <button key={tab} onClick={() => { haptic('light'); setActiveTab(tab); if (tab === 'applications') setIsEditing(false) }} style={{ flex: 1, padding: '9px', borderRadius: '10px', fontSize: '12px', fontWeight: '600', background: activeTab === tab ? colors.btnBg : colors.surface2, border: `1px solid ${activeTab === tab ? colors.btnBg : colors.border}`, color: activeTab === tab ? colors.btnText : colors.text2, cursor: 'pointer' }}>
+              {tab === 'applications' ? 'Applications Received' : 'Profile'}
             </button>
           ))}
         </div>
 
         {activeTab === 'profile' && (
           <>
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Availability</div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {['Available', 'Busy', 'Open to Offers'].map(a => (
-                  <button key={a} onClick={() => { haptic('light'); setAvailability(a) }} style={{ flex: 1, padding: '8px 4px', borderRadius: '10px', fontSize: '10px', fontWeight: '600', background: availability === a ? colors.btnBg : colors.surface2, border: `1px solid ${availability === a ? colors.btnBg : colors.border}`, color: availability === a ? colors.btnText : colors.text2, cursor: 'pointer' }}>{a}</button>
-                ))}
+            {!isEditing ? (
+              <div>
+                {!savedBio && !savedSkills && (
+                  <div style={{ textAlign: 'center', padding: '12px 0 8px', color: colors.text2 }}>
+                    <div style={{ fontSize: '13px' }}>No profile info yet. Tap Edit Profile to get started.</div>
+                  </div>
+                )}
+                {saved && (
+                  <div style={{ marginBottom: '12px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399', fontSize: '13px', textAlign: 'center', fontWeight: '600' }}>
+                    ✓ Profile saved!
+                  </div>
+                )}
+                <button onClick={handleEdit} style={{ width: '100%', padding: '13px', borderRadius: '12px', background: colors.surface2, border: `1px solid ${colors.border}`, color: colors.text, fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+                  ✏️ Edit Profile
+                </button>
               </div>
-            </div>
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>About Me</div>
-              <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Tell clients about yourself..." style={{ width: '100%', height: '80px', padding: '12px 14px', borderRadius: '12px', resize: 'none', background: colors.surface2, border: `1px solid ${colors.border}`, color: colors.text, fontSize: '14px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
-            </div>
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Skills (comma separated)</div>
-              <input value={skills} onChange={e => setSkills(e.target.value)} placeholder="e.g. Community Management, BD, Writing..." style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', background: colors.surface2, border: `1px solid ${colors.border}`, color: colors.text, fontSize: '14px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
-            </div>
-            <button onClick={handleSave} style={{ width: '100%', padding: '13px', borderRadius: '12px', background: saved ? 'rgba(52,211,153,0.1)' : colors.btnBg, border: saved ? '1px solid rgba(52,211,153,0.3)' : 'none', color: saved ? '#34d399' : colors.btnText, fontSize: '14px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s ease' }}>{saved ? 'Profile Saved!' : 'Save Profile'}</button>
+            ) : (
+              <>
+                <div style={{ marginBottom: '14px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Availability</div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {['Available', 'Busy', 'Open to Offers'].map(a => (
+                      <button key={a} onClick={() => { haptic('light'); setAvailability(a) }} style={{ flex: 1, padding: '8px 4px', borderRadius: '10px', fontSize: '10px', fontWeight: '600', background: availability === a ? colors.btnBg : colors.surface2, border: `1px solid ${availability === a ? colors.btnBg : colors.border}`, color: availability === a ? colors.btnText : colors.text2, cursor: 'pointer' }}>{a}</button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ marginBottom: '14px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>About Me</div>
+                  <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Tell clients about yourself..." style={{ width: '100%', height: '80px', padding: '12px 14px', borderRadius: '12px', resize: 'none', background: colors.surface2, border: `1px solid ${colors.border}`, color: colors.text, fontSize: '14px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ marginBottom: '14px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Skills (comma separated)</div>
+                  <input value={skills} onChange={e => setSkills(e.target.value)} placeholder="e.g. Community Management, BD, Writing..." style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', background: colors.surface2, border: `1px solid ${colors.border}`, color: colors.text, fontSize: '14px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={handleCancel} style={{ flex: 1, padding: '13px', borderRadius: '12px', background: colors.surface2, border: `1px solid ${colors.border}`, color: colors.text, fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={handleSave} style={{ flex: 2, padding: '13px', borderRadius: '12px', background: colors.btnBg, border: 'none', color: colors.btnText, fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>Save Profile</button>
+                </div>
+              </>
+            )}
           </>
         )}
 
         {activeTab === 'applications' && <ApplicationsReceived colors={colors} dark={dark} tgUser={tgUser} />}
       </div>
 
+      {/* Stats */}
       <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '16px', overflow: 'hidden', marginBottom: '16px' }}>
         {[{ label: 'QuestScore', value: '0' }, { label: 'Applications Sent', value: '0' }, { label: 'Gigs Completed', value: '0' }, { label: 'Total Earned', value: '$0 USDT' }].map((item, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderBottom: i < 3 ? `1px solid ${colors.border}` : 'none' }}>
@@ -762,14 +872,18 @@ const instance = await dropin.create({
         ))}
       </div>
 
-      <div onClick={() => { haptic('medium'); setShowPayment(true) }} style={{ background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${colors.accentBorder}`, borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', cursor: 'pointer' }}>
-        <div>
-          <div style={{ fontSize: '14px', fontWeight: '700' }}>Upgrade to Premium</div>
-          <div style={{ fontSize: '12px', color: colors.text2, marginTop: '2px' }}>AI features, priority visibility and more</div>
+      {/* Upgrade banner — hidden if already premium */}
+      {!isPremium && (
+        <div onClick={() => { haptic('medium'); setShowPayment(true) }} style={{ background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${colors.accentBorder}`, borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', cursor: 'pointer' }}>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: '700' }}>Upgrade to Premium</div>
+            <div style={{ fontSize: '12px', color: colors.text2, marginTop: '2px' }}>AI features, priority visibility and more</div>
+          </div>
+          <div style={{ background: colors.btnBg, color: colors.btnText, fontSize: '12px', fontWeight: '700', padding: '8px 14px', borderRadius: '10px' }}>$15/mo</div>
         </div>
-        <div style={{ background: colors.btnBg, color: colors.btnText, fontSize: '12px', fontWeight: '700', padding: '8px 14px', borderRadius: '10px' }}>$15/mo</div>
-      </div>
+      )}
 
+      {/* Digital Products */}
       <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '16px', padding: '16px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -800,6 +914,7 @@ const instance = await dropin.create({
         <div style={{ fontSize: '11px', color: colors.text2, marginTop: '2px', opacity: 0.6 }}>Web3 Freelance Network</div>
       </div>
 
+      {/* Payment Modal */}
       {showPayment && (
         <div onClick={() => { haptic('light'); setShowPayment(false) }} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', boxSizing: 'border-box' }}>
           <div onClick={e => e.stopPropagation()} style={{ background: dark ? '#1c1c1e' : '#ffffff', borderRadius: '24px', padding: '28px 24px 32px', width: '100%', maxWidth: '420px', border: `1px solid ${colors.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.3)', boxSizing: 'border-box', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -830,8 +945,7 @@ const instance = await dropin.create({
                 <button
                   onClick={async () => {
                     if (!dropinInstance) { setPaymentError('Payment form not ready. Please wait.'); return }
-                    setProcessing(true)
-                    setPaymentError('')
+                    setProcessing(true); setPaymentError('')
                     try {
                       const payload = await dropinInstance.requestPaymentMethod()
                       const res = await fetch(`${API}/api/braintree/subscribe`, {
@@ -841,6 +955,7 @@ const instance = await dropin.create({
                       })
                       const data = await res.json()
                       if (data.success) {
+                        setIsPremium(true)
                         setShowPayment(false)
                         alert('Welcome to Premium! Your account has been upgraded.')
                       } else {
