@@ -96,7 +96,7 @@ app.get('/api/users/search', async (req, res) => {
 app.get('/api/users/:tg_id', async (req, res) => {
   try {
     const { tg_id } = req.params
-    const user = await sql`SELECT * FROM users WHERE tg_id = ${tg_id}`
+    const user = await sql`SELECT * FROM users WHERE tg_id = ${String(tg_id)}`
     res.json(user[0] || null)
   } catch (err) {
     res.status(500).json({ error: err.message })
