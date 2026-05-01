@@ -328,6 +328,23 @@ bot.onText(/\/downgrade (.+)/, async (msg, match) => {
     bot.sendMessage(msg.chat.id, `❌ Error: ${err.message}`)
   }
 })
-
+// Get Telegram profile photo
+app.get('/api/users/photo/:tg_id', async (req, res) => {
+  try {
+    const { tg_id } = req.params
+    const BOT_TOKEN = process.env.BOT_TOKEN
+    const profileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUserProfilePhotos?user_id=${tg_id}&limit=1`)
+    const profileData = await profileRes.json()
+    const fileId = profileData?.result?.photos?.[0]?.[0]?.file_id
+    if (!fileId) return res.json({ photo_url: null })
+    const fileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`)
+    const fileData = await fileRes.json()
+    const filePath = fileData?.result?.file_path
+    if (!filePath) return res.json({ photo_url: null })
+    res.json({ photo_url: `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}` })
+  } catch (err) {
+    res.json({ photo_url: null })
+  }
+})
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => console.log(`QuestWork API running on port ${PORT}`))
