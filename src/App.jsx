@@ -15,7 +15,6 @@ const IconHome = ({ size = 22 }) => (
     <path d="M9 21V12h6v9"/>
   </svg>
 )
-
 const IconBriefcase = ({ size = 22 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="7" width="20" height="14" rx="2"/>
@@ -24,7 +23,6 @@ const IconBriefcase = ({ size = 22 }) => (
     <path d="M2 12h20"/>
   </svg>
 )
-
 const IconPlus = ({ size = 22 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10"/>
@@ -32,46 +30,55 @@ const IconPlus = ({ size = 22 }) => (
     <line x1="8" y1="12" x2="16" y2="12"/>
   </svg>
 )
-
 const IconSearch = ({ size = 22 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8"/>
     <line x1="21" y1="21" x2="16.65" y2="16.65"/>
   </svg>
 )
-
 const IconUser = ({ size = 22 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
     <circle cx="12" cy="7" r="4"/>
   </svg>
 )
-
-// ── NEW: Message bell icon ──
 const IconMessage = ({ size = 22 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
   </svg>
 )
-
-// ── NEW: Bookmark icon ──
 const IconBookmark = ({ size = 18, filled = false }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+  </svg>
+)
+const IconStar = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
   </svg>
 )
 
 const API = 'https://questwork.up.railway.app'
 
 const SAMPLE_GIGS = [
-  { id: 1, title: "Community Manager", company: "Sui Network", pay: "$800/mo", tag: "Africa", category: "Community Management", featured: true, description: "Manage and grow our Discord and Telegram communities. Engage daily with members, host AMAs, and coordinate with the core team on announcements and campaigns.", requirements: "2+ years Web3 community experience, strong communication skills, experience with Discord bots and analytics." },
-  { id: 2, title: "BD Manager", company: "TON Wallet", pay: "$1,200/mo", tag: "MENA", category: "Business Development", featured: true, description: "Drive ecosystem partnerships and integrations. Identify and close deals with DeFi protocols, NFT projects, and Web3 infrastructure providers in the MENA region.", requirements: "3+ years BD in crypto, existing network of Web3 founders, ability to travel occasionally." },
-  { id: 3, title: "Social Media Manager", company: "BNB Chain", pay: "$600/mo", tag: "Global", category: "Social Media", featured: false, description: "Own all social channels including Twitter, TikTok and Instagram. Create viral content, grow follower base, and coordinate campaigns with the marketing team.", requirements: "Portfolio of managed crypto accounts, experience with analytics tools, content creation skills." },
-  { id: 4, title: "Web3 Writer", company: "CoinDesk", pay: "$400/mo", tag: "Remote", category: "Writing", featured: false, description: "Write 4-6 articles per week covering DeFi, NFTs, DAOs and blockchain technology. Research, interview sources, and meet deadlines consistently.", requirements: "Published writing portfolio, deep Web3 knowledge, ability to explain complex topics simply." },
-  { id: 5, title: "Smart Contract Dev", company: "Aave", pay: "$3,000/mo", tag: "Global", category: "Development", featured: false, description: "Develop and audit smart contracts for Aave's lending protocol. Work closely with the security team on upgrades and new feature deployments.", requirements: "Solidity expert, 2+ years DeFi experience, security auditing background preferred." },
-  { id: 6, title: "Discord Moderator", company: "Polygon", pay: "$300/mo", tag: "Africa", category: "Community Management", featured: false, description: "Moderate Polygon's Discord server with 200K+ members. Enforce community rules, support users, and escalate issues to the community team.", requirements: "Active in Web3 communities, familiar with Discord moderation tools, good English communication." },
-  { id: 7, title: "Growth Hacker", company: "Arbitrum", pay: "$1,500/mo", tag: "MENA", category: "Business Development", featured: false, description: "Design and execute growth experiments to acquire new users and protocols onto Arbitrum. Own KPIs and report weekly to leadership.", requirements: "Growth marketing background, data-driven mindset, crypto-native with deep ecosystem knowledge." },
-  { id: 8, title: "NFT Artist", company: "OpenSea", pay: "$2,000/mo", tag: "Global", category: "Writing", featured: false, description: "Create original NFT artwork for featured drops and collaborations. Work with partner artists and the curation team to maintain quality standards.", requirements: "Strong digital art portfolio, experience minting NFTs, knowledge of generative art tools." },
+  { id: 1, title: "Community Manager", company: "Sui Network", pay: "$800/mo", tag: "Africa", duration: "Ongoing", category: "Community Management", featured: true, description: "Manage and grow our Discord and Telegram communities. Engage daily with members, host AMAs, and coordinate with the core team on announcements and campaigns.", requirements: "2+ years Web3 community experience, strong communication skills, experience with Discord bots and analytics." },
+  { id: 2, title: "BD Manager", company: "TON Wallet", pay: "$1,200/mo", tag: "MENA", duration: "3 Months", category: "Business Development", featured: true, description: "Drive ecosystem partnerships and integrations. Identify and close deals with DeFi protocols, NFT projects, and Web3 infrastructure providers in the MENA region.", requirements: "3+ years BD in crypto, existing network of Web3 founders, ability to travel occasionally." },
+  { id: 3, title: "Social Media Manager", company: "BNB Chain", pay: "$600/mo", tag: "Global", duration: "1 Month", category: "Social Media", featured: false, description: "Own all social channels including Twitter, TikTok and Instagram. Create viral content, grow follower base, and coordinate campaigns with the marketing team.", requirements: "Portfolio of managed crypto accounts, experience with analytics tools, content creation skills." },
+  { id: 4, title: "Web3 Writer", company: "CoinDesk", pay: "$400/mo", tag: "Remote", duration: "Ongoing", category: "Writing", featured: false, description: "Write 4-6 articles per week covering DeFi, NFTs, DAOs and blockchain technology. Research, interview sources, and meet deadlines consistently.", requirements: "Published writing portfolio, deep Web3 knowledge, ability to explain complex topics simply." },
+  { id: 5, title: "Smart Contract Dev", company: "Aave", pay: "$3,000/mo", tag: "Global", duration: "3 Months", category: "Development", featured: false, description: "Develop and audit smart contracts for Aave's lending protocol. Work closely with the security team on upgrades and new feature deployments.", requirements: "Solidity expert, 2+ years DeFi experience, security auditing background preferred." },
+  { id: 6, title: "Discord Moderator", company: "Polygon", pay: "$300/mo", tag: "Africa", duration: "Ongoing", category: "Community Management", featured: false, description: "Moderate Polygon's Discord server with 200K+ members. Enforce community rules, support users, and escalate issues to the community team.", requirements: "Active in Web3 communities, familiar with Discord moderation tools, good English communication." },
+  { id: 7, title: "Growth Hacker", company: "Arbitrum", pay: "$1,500/mo", tag: "MENA", duration: "3 Months", category: "Business Development", featured: false, description: "Design and execute growth experiments to acquire new users and protocols onto Arbitrum. Own KPIs and report weekly to leadership.", requirements: "Growth marketing background, data-driven mindset, crypto-native with deep ecosystem knowledge." },
+  { id: 8, title: "NFT Artist", company: "OpenSea", pay: "$2,000/mo", tag: "Global", duration: "1 Month", category: "Writing", featured: false, description: "Create original NFT artwork for featured drops and collaborations. Work with partner artists and the curation team to maintain quality standards.", requirements: "Strong digital art portfolio, experience minting NFTs, knowledge of generative art tools." },
+]
+
+// FIX 1: Featured freelancers sample data for Search tab
+const SAMPLE_FREELANCERS = [
+  { id: 1, name: "Amara Okonkwo", username: "amara_web3", skills: ["Community Management", "Discord"], questScore: 4.9, gigsCompleted: 52, earned: "$28K", available: true, bio: "Web3 community builder with 4+ years growing crypto projects across Africa." },
+  { id: 2, name: "Hassan Al-Rashid", username: "hassan_bd", skills: ["Business Development", "Partnerships"], questScore: 4.7, gigsCompleted: 38, earned: "$19K", available: true, bio: "BD expert connecting Web3 projects with key partners across MENA region." },
+  { id: 3, name: "Zainab Ahmed", username: "zainab_cm", skills: ["Community Management", "Telegram"], questScore: 4.8, gigsCompleted: 47, earned: "$25K", available: false, bio: "Crypto community manager specialising in Telegram and Discord growth." },
+  { id: 4, name: "Kofi Mensah", username: "kofi_writer", skills: ["Writing", "Research"], questScore: 4.6, gigsCompleted: 31, earned: "$14K", available: true, bio: "Web3 content writer covering DeFi, NFTs and blockchain technology." },
+  { id: 5, name: "Fatima Al-Zahra", username: "fatima_dev", skills: ["Development", "Solidity"], questScore: 4.8, gigsCompleted: 29, earned: "$42K", available: true, bio: "Smart contract developer with auditing experience on Ethereum and TON." },
+  { id: 6, name: "Emeka Obi", username: "emeka_social", skills: ["Social Media", "Content"], questScore: 4.5, gigsCompleted: 44, earned: "$18K", available: true, bio: "Social media manager growing Web3 brands on Twitter, TikTok and Instagram." },
 ]
 
 const haptic = (type = 'light') => {
@@ -104,8 +111,8 @@ const tabs = [
   { id: 'profile', label: 'Profile', Icon: IconUser },
 ]
 
-// ── NEW: Email/Password Signup Modal ──
-function SignupModal({ colors, dark, onClose, onSave }) {
+// FIX 2: Signup modal — Skip button removed, compulsory
+function SignupModal({ colors, dark, onSave }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -134,12 +141,12 @@ function SignupModal({ colors, dark, onClose, onSave }) {
   const inputStyle = { width: '100%', padding: '13px 14px', borderRadius: '12px', background: dark ? 'rgba(44,44,46,0.8)' : 'rgba(230,230,235,0.6)', border: `1px solid ${colors.border}`, color: colors.text, fontSize: '15px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', marginBottom: '12px' }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', boxSizing: 'border-box' }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: dark ? '#1c1c1e' : '#ffffff', borderRadius: '24px', padding: '28px 24px 32px', width: '100%', maxWidth: '420px', border: `1px solid ${colors.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.4)', boxSizing: 'border-box' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', boxSizing: 'border-box' }}>
+      <div style={{ background: dark ? '#1c1c1e' : '#ffffff', borderRadius: '24px', padding: '28px 24px 32px', width: '100%', maxWidth: '420px', border: `1px solid ${colors.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.4)', boxSizing: 'border-box' }}>
         <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: colors.border, margin: '0 auto 20px' }} />
         <div style={{ fontSize: '22px', fontWeight: '700', marginBottom: '6px', textAlign: 'center' }}>Set Backup Login</div>
         <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '6px', textAlign: 'center', lineHeight: 1.5 }}>
-          Save your email and password in case Telegram is ever unavailable. This keeps your account safe.
+          Required to protect your account in case Telegram is ever unavailable.
         </div>
         <div style={{ fontSize: '11px', color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '10px', padding: '10px 12px', marginBottom: '20px', lineHeight: 1.5, textAlign: 'center' }}>
           🔒 Telegram ban protection — your data stays yours
@@ -148,18 +155,15 @@ function SignupModal({ colors, dark, onClose, onSave }) {
         <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" style={inputStyle} />
         <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Create a password (min 6 chars)" style={inputStyle} />
         <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Confirm password" style={{ ...inputStyle, marginBottom: '20px' }} />
-        <button onClick={handleSave} disabled={saving} style={{ width: '100%', padding: '15px', borderRadius: '13px', background: saving ? colors.surface2 : colors.btnBg, border: 'none', color: saving ? colors.text2 : colors.btnText, fontSize: '16px', fontWeight: '700', cursor: saving ? 'not-allowed' : 'pointer', marginBottom: '10px' }}>
-          {saving ? 'Saving...' : 'Save Backup Login'}
-        </button>
-        <button onClick={onClose} style={{ width: '100%', padding: '12px', borderRadius: '13px', background: 'none', border: 'none', color: colors.text2, fontSize: '14px', cursor: 'pointer' }}>
-          Skip for now
+        <button onClick={handleSave} disabled={saving} style={{ width: '100%', padding: '15px', borderRadius: '13px', background: saving ? colors.surface2 : colors.btnBg, border: 'none', color: saving ? colors.text2 : colors.btnText, fontSize: '16px', fontWeight: '700', cursor: saving ? 'not-allowed' : 'pointer' }}>
+          {saving ? 'Saving...' : 'Save & Continue →'}
         </button>
       </div>
     </div>
   )
 }
 
-// ── NEW: Messages Panel ──
+// Messages Panel (unchanged)
 function MessagesPanel({ colors, dark, tgUser, onClose }) {
   const [threads, setThreads] = useState([])
   const [loading, setLoading] = useState(true)
@@ -209,18 +213,13 @@ function MessagesPanel({ colors, dark, tgUser, onClose }) {
   return (
     <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9000, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
       <div onClick={e => e.stopPropagation()} style={{ background: dark ? '#1c1c1e' : '#ffffff', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: '500px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', border: `1px solid ${colors.border}`, boxShadow: '0 -10px 40px rgba(0,0,0,0.3)' }}>
-        {/* Panel Header */}
         <div style={{ padding: '16px 20px', borderBottom: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {activeThread && (
-              <button onClick={() => setActiveThread(null)} style={{ background: 'none', border: 'none', color: colors.text2, cursor: 'pointer', fontSize: '20px', padding: '0 4px' }}>‹</button>
-            )}
+            {activeThread && <button onClick={() => setActiveThread(null)} style={{ background: 'none', border: 'none', color: colors.text2, cursor: 'pointer', fontSize: '20px', padding: '0 4px' }}>‹</button>}
             <div style={{ fontSize: '17px', fontWeight: '700' }}>{activeThread ? activeThread.other_name || 'Chat' : 'Messages'}</div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: colors.text2, cursor: 'pointer', fontSize: '22px', lineHeight: 1 }}>×</button>
         </div>
-
-        {/* Thread list */}
         {!activeThread && (
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
             {loading && <div style={{ textAlign: 'center', padding: '30px', color: colors.text2 }}>Loading...</div>}
@@ -232,22 +231,16 @@ function MessagesPanel({ colors, dark, tgUser, onClose }) {
             )}
             {threads.map((t, i) => (
               <div key={i} onClick={() => openThread(t)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '14px', background: colors.surface2, border: `1px solid ${colors.border}`, marginBottom: '8px', cursor: 'pointer' }}>
-                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: colors.accentBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', flexShrink: 0 }}>
-                  {(t.other_name || '?')[0]}
-                </div>
+                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: colors.accentBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', flexShrink: 0 }}>{(t.other_name || '?')[0]}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '2px' }}>{t.other_name || 'Unknown'}</div>
                   <div style={{ fontSize: '12px', color: colors.text2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.last_message || '...'}</div>
                 </div>
-                {t.unread_count > 0 && (
-                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#FF5A3C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: '#fff', flexShrink: 0 }}>{t.unread_count}</div>
-                )}
+                {t.unread_count > 0 && <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#FF5A3C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: '#fff', flexShrink: 0 }}>{t.unread_count}</div>}
               </div>
             ))}
           </div>
         )}
-
-        {/* Active thread / chat view */}
         {activeThread && (
           <>
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -255,9 +248,7 @@ function MessagesPanel({ colors, dark, tgUser, onClose }) {
                 const isMine = String(m.sender_tg_id) === String(tgUser?.id)
                 return (
                   <div key={i} style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
-                    <div style={{ maxWidth: '72%', padding: '10px 14px', borderRadius: isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: isMine ? colors.btnBg : colors.surface2, color: isMine ? colors.btnText : colors.text, fontSize: '14px', lineHeight: 1.5 }}>
-                      {m.content}
-                    </div>
+                    <div style={{ maxWidth: '72%', padding: '10px 14px', borderRadius: isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: isMine ? colors.btnBg : colors.surface2, color: isMine ? colors.btnText : colors.text, fontSize: '14px', lineHeight: 1.5 }}>{m.content}</div>
                   </div>
                 )
               })}
@@ -273,7 +264,7 @@ function MessagesPanel({ colors, dark, tgUser, onClose }) {
   )
 }
 
-// ── NEW: Gig Detail Modal ──
+// FIX 3: Gig Detail Modal — back button, organised layout, bookmark next to apply, clear pay/region/duration
 function GigDetailModal({ gig, colors, dark, tgUser, isPremium, onClose, bookmarks, toggleBookmark }) {
   const [showApply, setShowApply] = useState(false)
   const [pitch, setPitch] = useState('')
@@ -310,57 +301,78 @@ function GigDetailModal({ gig, colors, dark, tgUser, isPremium, onClose, bookmar
   const inputStyle = { width: '100%', padding: '12px 14px', borderRadius: '12px', background: dark ? 'rgba(44,44,46,0.8)' : 'rgba(230,230,235,0.6)', border: `1px solid ${colors.border}`, color: colors.text, fontSize: '14px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '0' }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: dark ? '#1c1c1e' : '#ffffff', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${colors.border}`, boxShadow: '0 -10px 40px rgba(0,0,0,0.3)', padding: '24px 20px 40px' }}>
-        <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: colors.border, margin: '0 auto 20px' }} />
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div style={{ background: dark ? '#1c1c1e' : '#ffffff', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: '500px', maxHeight: '92vh', overflowY: 'auto', border: `1px solid ${colors.border}`, boxShadow: '0 -10px 40px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column' }}>
 
-        {/* Gig header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+        {/* FIX: Sticky header with back button */}
+        <div style={{ position: 'sticky', top: 0, zIndex: 10, background: dark ? '#1c1c1e' : '#ffffff', padding: '16px 20px 12px', borderBottom: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+          <button onClick={onClose} style={{ width: '36px', height: '36px', borderRadius: '50%', background: colors.surface2, border: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: colors.text, fontSize: '18px', flexShrink: 0 }}>‹</button>
           <div style={{ flex: 1 }}>
-            {gig.featured && <div style={{ display: 'inline-flex', fontSize: '10px', fontWeight: '600', padding: '3px 8px', borderRadius: '6px', background: colors.accentBg, color: colors.accent, marginBottom: '6px', textTransform: 'uppercase' }}>Featured</div>}
-            <div style={{ fontSize: '22px', fontWeight: '700', letterSpacing: '-0.4px', marginBottom: '4px' }}>{gig.title}</div>
-            <div style={{ fontSize: '15px', color: colors.text2 }}>{gig.company}</div>
+            <div style={{ fontSize: '16px', fontWeight: '700', letterSpacing: '-0.3px' }}>{gig.title}</div>
+            <div style={{ fontSize: '12px', color: colors.text2 }}>{gig.company}</div>
           </div>
-          <button onClick={() => { haptic('light'); toggleBookmark(gig.id) }} style={{ width: '40px', height: '40px', borderRadius: '12px', background: isBookmarked ? 'rgba(200,169,90,0.15)' : colors.surface2, border: `1px solid ${isBookmarked ? 'rgba(200,169,90,0.4)' : colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isBookmarked ? '#C8A95A' : colors.text2, flexShrink: 0, marginLeft: '12px' }}>
-            <IconBookmark size={18} filled={isBookmarked} />
-          </button>
+          {gig.featured && <div style={{ fontSize: '10px', fontWeight: '600', padding: '3px 8px', borderRadius: '6px', background: colors.accentBg, color: colors.accent, textTransform: 'uppercase' }}>Featured</div>}
         </div>
 
-        {/* Pay + tag row */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
-          <div style={{ fontSize: '18px', fontWeight: '700' }}>{gig.pay}</div>
-          <div style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '8px', background: colors.surface2, color: colors.text2, alignSelf: 'center' }}>{gig.tag || 'Global'}</div>
-          <div style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '8px', background: colors.surface2, color: colors.text2, alignSelf: 'center' }}>{gig.category}</div>
-        </div>
+        <div style={{ padding: '20px 20px 40px', flex: 1 }}>
 
-        {/* Description */}
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>About this Role</div>
-          <div style={{ fontSize: '14px', color: colors.text, lineHeight: 1.7 }}>{gig.description || 'No description provided.'}</div>
-        </div>
-
-        {/* Requirements */}
-        {gig.requirements && (
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Requirements</div>
-            <div style={{ fontSize: '14px', color: colors.text, lineHeight: 1.7 }}>{gig.requirements}</div>
+          {/* FIX: Organised key info grid — Pay, Region, Duration clearly separated */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+            {[
+              { label: 'Pay', value: gig.pay || gig.pay_usdt || 'Negotiable', highlight: true },
+              { label: 'Region', value: gig.tag || gig.region || 'Global', highlight: false },
+              { label: 'Duration', value: gig.duration || 'Ongoing', highlight: false },
+            ].map((item, i) => (
+              <div key={i} style={{ background: i === 0 ? (dark ? 'rgba(200,169,90,0.12)' : 'rgba(200,169,90,0.08)') : colors.surface2, border: `1px solid ${i === 0 ? 'rgba(200,169,90,0.3)' : colors.border}`, borderRadius: '14px', padding: '12px 10px', textAlign: 'center' }}>
+                <div style={{ fontSize: '10px', fontWeight: '600', color: i === 0 ? '#C8A95A' : colors.text2, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>{item.label}</div>
+                <div style={{ fontSize: '14px', fontWeight: '700', color: i === 0 ? '#C8A95A' : colors.text }}>{item.value}</div>
+              </div>
+            ))}
           </div>
-        )}
 
-        {/* Source tag for external gigs */}
-        {gig.source === 'web3.career' && (
-          <div style={{ fontSize: '11px', color: colors.text2, padding: '8px 12px', borderRadius: '8px', background: colors.surface2, border: `1px solid ${colors.border}`, marginBottom: '20px', textAlign: 'center' }}>
-            Listed via <strong>web3.career</strong> — Apply on their platform
+          {/* Category badge */}
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ display: 'inline-flex', fontSize: '12px', padding: '4px 12px', borderRadius: '20px', background: colors.surface2, color: colors.text2, border: `1px solid ${colors.border}` }}>{gig.category}</div>
           </div>
-        )}
 
-        {/* Apply section */}
-        {!applied ? (
-          <>
-            {!showApply ? (
-              <button onClick={() => { haptic('medium'); gig.source === 'web3.career' ? window.open(gig.apply_url, '_blank') : setShowApply(true) }} style={{ width: '100%', padding: '16px', borderRadius: '14px', background: colors.btnBg, border: 'none', color: colors.btnText, fontSize: '16px', fontWeight: '700', cursor: 'pointer' }}>
-                {gig.source === 'web3.career' ? 'Apply on web3.career ↗' : 'Apply Now'}
-              </button>
+          {/* About the Role */}
+          <div style={{ marginBottom: '20px', background: colors.surface2, border: `1px solid ${colors.border}`, borderRadius: '16px', padding: '16px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '10px' }}>About the Role</div>
+            <div style={{ fontSize: '14px', color: colors.text, lineHeight: 1.75 }}>{gig.description || 'No description provided.'}</div>
+          </div>
+
+          {/* Requirements */}
+          {gig.requirements && (
+            <div style={{ marginBottom: '24px', background: colors.surface2, border: `1px solid ${colors.border}`, borderRadius: '16px', padding: '16px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text2, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '10px' }}>Requirements</div>
+              <div style={{ fontSize: '14px', color: colors.text, lineHeight: 1.75 }}>{gig.requirements}</div>
+            </div>
+          )}
+
+          {/* External gig attribution */}
+          {gig.source === 'web3.career' && (
+            <div style={{ fontSize: '11px', color: colors.text2, padding: '8px 12px', borderRadius: '8px', background: colors.surface2, border: `1px solid ${colors.border}`, marginBottom: '20px', textAlign: 'center' }}>
+              Listed via <strong>web3.career</strong> — Apply on their platform
+            </div>
+          )}
+
+          {/* FIX: Apply + Bookmark side by side at bottom */}
+          {!applied ? (
+            !showApply ? (
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  onClick={() => { haptic('medium'); gig.source === 'web3.career' ? window.open(gig.apply_url, '_blank') : setShowApply(true) }}
+                  style={{ flex: 1, padding: '16px', borderRadius: '14px', background: colors.btnBg, border: 'none', color: colors.btnText, fontSize: '16px', fontWeight: '700', cursor: 'pointer' }}
+                >
+                  {gig.source === 'web3.career' ? 'Apply on web3.career ↗' : 'Apply Now'}
+                </button>
+                <button
+                  onClick={() => { haptic('light'); toggleBookmark(gig.id) }}
+                  style={{ width: '52px', height: '52px', borderRadius: '14px', background: isBookmarked ? 'rgba(200,169,90,0.15)' : colors.surface2, border: `1px solid ${isBookmarked ? 'rgba(200,169,90,0.4)' : colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isBookmarked ? '#C8A95A' : colors.text2, flexShrink: 0 }}
+                >
+                  <IconBookmark size={20} filled={isBookmarked} />
+                </button>
+              </div>
             ) : (
               <div>
                 {tgUser && (
@@ -386,13 +398,74 @@ function GigDetailModal({ gig, colors, dark, tgUser, isPremium, onClose, bookmar
                   <button onClick={handleApply} disabled={applying} style={{ flex: 2, padding: '14px', borderRadius: '12px', background: applying ? colors.surface2 : colors.btnBg, border: 'none', color: applying ? colors.text2 : colors.btnText, fontSize: '15px', fontWeight: '700', cursor: applying ? 'not-allowed' : 'pointer' }}>{applying ? 'Submitting...' : 'Submit'}</button>
                 </div>
               </div>
-            )}
-          </>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '16px', borderRadius: '14px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399', fontSize: '16px', fontWeight: '600' }}>
-            ✓ Application Submitted!
+            )
+          ) : (
+            <div style={{ textAlign: 'center', padding: '16px', borderRadius: '14px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399', fontSize: '16px', fontWeight: '600' }}>
+              ✓ Application Submitted!
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// FIX 4: Freelancer Profile Modal
+function FreelancerModal({ freelancer, colors, dark, onClose }) {
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: dark ? '#1c1c1e' : '#ffffff', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: '500px', maxHeight: '80vh', overflowY: 'auto', border: `1px solid ${colors.border}`, boxShadow: '0 -10px 40px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ position: 'sticky', top: 0, zIndex: 10, background: dark ? '#1c1c1e' : '#ffffff', padding: '16px 20px 12px', borderBottom: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={onClose} style={{ width: '36px', height: '36px', borderRadius: '50%', background: colors.surface2, border: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: colors.text, fontSize: '18px' }}>‹</button>
+          <div style={{ fontSize: '16px', fontWeight: '700' }}>Freelancer Profile</div>
+        </div>
+        <div style={{ padding: '20px 20px 40px' }}>
+          {/* Profile header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(200,169,90,0.15)', border: '2px solid rgba(200,169,90,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', fontWeight: '700', color: '#C8A95A', flexShrink: 0 }}>{freelancer.name[0]}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '18px', fontWeight: '700', marginBottom: '2px' }}>{freelancer.name}</div>
+              <div style={{ fontSize: '13px', color: colors.text2 }}>@{freelancer.username}</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', padding: '3px 10px', borderRadius: '20px', background: freelancer.available ? 'rgba(52,211,153,0.1)' : colors.surface2, border: `1px solid ${freelancer.available ? 'rgba(52,211,153,0.3)' : colors.border}`, color: freelancer.available ? '#34d399' : colors.text2, fontSize: '11px', fontWeight: '600' }}>
+                {freelancer.available ? '● Available' : '● Busy'}
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* Stats grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+            {[
+              { label: 'QuestScore', value: freelancer.questScore },
+              { label: 'Gigs Done', value: freelancer.gigsCompleted },
+              { label: 'Earned', value: freelancer.earned },
+            ].map((s, i) => (
+              <div key={i} style={{ background: colors.surface2, border: `1px solid ${colors.border}`, borderRadius: '14px', padding: '12px 10px', textAlign: 'center' }}>
+                <div style={{ fontSize: '10px', color: colors.text2, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>{s.label}</div>
+                <div style={{ fontSize: '15px', fontWeight: '700' }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Bio */}
+          <div style={{ background: colors.surface2, border: `1px solid ${colors.border}`, borderRadius: '14px', padding: '14px', marginBottom: '16px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: colors.text2, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>About</div>
+            <div style={{ fontSize: '14px', color: colors.text, lineHeight: 1.7 }}>{freelancer.bio}</div>
+          </div>
+
+          {/* Skills */}
+          <div style={{ marginBottom: '24px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: colors.text2, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>Skills</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {freelancer.skills.map((s, i) => (
+                <div key={i} style={{ fontSize: '12px', padding: '5px 12px', borderRadius: '20px', background: colors.accentBg, border: `1px solid ${colors.accentBorder}`, color: colors.accent, fontWeight: '500' }}>{s}</div>
+              ))}
+            </div>
+          </div>
+
+          <button onClick={() => { haptic('light'); window.open(`https://t.me/${freelancer.username}`, '_blank') }} style={{ width: '100%', padding: '16px', borderRadius: '14px', background: colors.btnBg, border: 'none', color: colors.btnText, fontSize: '16px', fontWeight: '700', cursor: 'pointer' }}>
+            Message on Telegram
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -407,7 +480,6 @@ export default function App() {
   const [notificationsOn, setNotificationsOn] = useState(() => localStorage.getItem('qw_notifications') !== 'off')
   const dark = resolved === 'dark'
 
-  // ── NEW state ──
   const [showMessages, setShowMessages] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const [showSignup, setShowSignup] = useState(false)
@@ -431,22 +503,11 @@ export default function App() {
     const userId = String(user?.id || '')
     if (user) {
       setTgUser(user)
-      fetch(`${API}/api/users`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tg_id: userId, tg_username: user.username || '', first_name: user.first_name || '', last_name: user.last_name || '' })
-      })
-      fetch(`${API}/api/users/${userId}`)
-        .then(r => r.json())
-        .then(data => { if (data?.is_premium) setIsPremium(true) })
-        .catch(() => {})
-
-      // ── NEW: Show signup modal for first-time users after 2s ──
+      fetch(`${API}/api/users`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tg_id: userId, tg_username: user.username || '', first_name: user.first_name || '', last_name: user.last_name || '' }) })
+      fetch(`${API}/api/users/${userId}`).then(r => r.json()).then(data => { if (data?.is_premium) setIsPremium(true) }).catch(() => {})
       if (!localStorage.getItem('qw_signup_done')) {
         setTimeout(() => setShowSignup(true), 2000)
       }
-
-      // ── NEW: Poll unread message count ──
       const pollUnread = async () => {
         try {
           const res = await fetch(`${API}/api/messages/unread/${userId}`)
@@ -465,7 +526,6 @@ export default function App() {
     document.documentElement.style.backgroundColor = dark ? '#000000' : '#F2F2F7'
   }, [dark])
 
-  // ── NEW: bookmark toggle ──
   const toggleBookmark = (gigId) => {
     haptic('medium')
     setBookmarks(prev => {
@@ -501,7 +561,7 @@ export default function App() {
   return (
     <div style={{ backgroundColor: colors.bg, minHeight: '100vh', width: '100vw', maxWidth: '100vw', margin: 0, padding: 0, color: colors.text, fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif', WebkitFontSmoothing: 'antialiased', position: 'relative', overflowX: 'hidden', transition: 'background-color 0.3s ease, color 0.3s ease', boxSizing: 'border-box' }}>
 
-      {/* ── UPDATED Header — message icon replaces theme toggle ── */}
+      {/* Header */}
       <div style={{ position: 'sticky', top: 0, zIndex: 50, padding: '16px 20px 12px', background: dark ? 'rgba(0,0,0,0.92)' : 'rgba(242,242,247,0.92)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)', borderBottom: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ color: colors.text }}><LOGO_SVG /></div>
@@ -510,7 +570,6 @@ export default function App() {
             <div style={{ fontSize: '9px', color: colors.text2, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '1px' }}>Freelance Network</div>
           </div>
         </div>
-        {/* Message icon with red badge */}
         <button onClick={() => { haptic('light'); setShowMessages(true) }} style={{ position: 'relative', width: '40px', height: '40px', borderRadius: '50%', background: colors.surface2, border: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: colors.text }}>
           <IconMessage size={20} />
           {unreadCount > 0 && (
@@ -543,40 +602,14 @@ export default function App() {
         })}
       </div>
 
-      {/* ── NEW: Messages Panel ── */}
-      {showMessages && (
-        <MessagesPanel colors={colors} dark={dark} tgUser={tgUser} onClose={() => setShowMessages(false)} />
-      )}
-
-      {/* ── NEW: Signup Modal (first time) ── */}
-      {showSignup && (
-        <SignupModal
-          colors={colors}
-          dark={dark}
-          onClose={() => setShowSignup(false)}
-          onSave={(email) => { setBackupEmail(email); setShowSignup(false) }}
-        />
-      )}
-
-      {/* ── NEW: Gig Detail Modal ── */}
-      {selectedGig && (
-        <GigDetailModal
-          gig={selectedGig}
-          colors={colors}
-          dark={dark}
-          tgUser={tgUser}
-          isPremium={isPremium}
-          onClose={() => setSelectedGig(null)}
-          bookmarks={bookmarks}
-          toggleBookmark={toggleBookmark}
-        />
-      )}
+      {showMessages && <MessagesPanel colors={colors} dark={dark} tgUser={tgUser} onClose={() => setShowMessages(false)} />}
+      {showSignup && <SignupModal colors={colors} dark={dark} onSave={(email) => { setBackupEmail(email); setShowSignup(false) }} />}
+      {selectedGig && <GigDetailModal gig={selectedGig} colors={colors} dark={dark} tgUser={tgUser} isPremium={isPremium} onClose={() => setSelectedGig(null)} bookmarks={bookmarks} toggleBookmark={toggleBookmark} />}
     </div>
   )
 }
 
-// ── GigCard updated: tap = detail modal, no inline apply modal anymore ──
-function GigCard({ gig, colors, dark, tgUser, isPremium, bookmarks, toggleBookmark, setSelectedGig }) {
+function GigCard({ gig, colors, dark, bookmarks, toggleBookmark, setSelectedGig }) {
   const [pressed, setPressed] = useState(false)
   const isBookmarked = bookmarks?.includes(gig.id)
 
@@ -592,7 +625,7 @@ function GigCard({ gig, colors, dark, tgUser, isPremium, bookmarks, toggleBookma
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
         <div style={{ flex: 1 }}>
-          {gig.featured && <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10px', fontWeight: '600', letterSpacing: '0.06em', padding: '3px 8px', borderRadius: '6px', background: colors.accentBg, color: colors.accent, marginBottom: '7px', textTransform: 'uppercase' }}>Featured</div>}
+          {gig.featured && <div style={{ display: 'inline-flex', fontSize: '10px', fontWeight: '600', letterSpacing: '0.06em', padding: '3px 8px', borderRadius: '6px', background: colors.accentBg, color: colors.accent, marginBottom: '7px', textTransform: 'uppercase' }}>Featured</div>}
           <div style={{ fontSize: '16px', fontWeight: '600', letterSpacing: '-0.3px', marginBottom: '3px' }}>{gig.title}</div>
           <div style={{ fontSize: '13px', color: colors.text2 }}>{gig.company}</div>
         </div>
@@ -603,11 +636,10 @@ function GigCard({ gig, colors, dark, tgUser, isPremium, bookmarks, toggleBookma
       </div>
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         <div style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '6px', background: colors.surface2, color: colors.text2, fontWeight: '500' }}>{gig.category}</div>
-        {/* Bookmark button */}
         <button onClick={e => { e.stopPropagation(); toggleBookmark && toggleBookmark(gig.id) }} style={{ marginLeft: 'auto', width: '34px', height: '34px', borderRadius: '10px', background: isBookmarked ? 'rgba(200,169,90,0.15)' : colors.surface2, border: `1px solid ${isBookmarked ? 'rgba(200,169,90,0.4)' : colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isBookmarked ? '#C8A95A' : colors.text2 }}>
           <IconBookmark size={15} filled={isBookmarked} />
         </button>
-        <button onClick={e => { e.stopPropagation(); setSelectedGig(gig) }} style={{ flex: 1, padding: '10px', borderRadius: '12px', background: colors.btnBg, border: 'none', color: colors.btnText, fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s ease' }}>
+        <button onClick={e => { e.stopPropagation(); setSelectedGig(gig) }} style={{ flex: 1, padding: '10px', borderRadius: '12px', background: colors.btnBg, border: 'none', color: colors.btnText, fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
           View & Apply
         </button>
       </div>
@@ -826,17 +858,22 @@ function PostPage({ colors, dark, tgUser }) {
   )
 }
 
+// FIX 5: SearchPage — rebuilt with freelancer catalog visible by default
 function SearchPage({ colors, dark, tgUser }) {
-  const [mode, setMode] = useState('gigs')
+  const [mode, setMode] = useState('freelancers')
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState([])
-  const [users, setUsers] = useState([])
+  const [gigResults, setGigResults] = useState([])
+  const [dbUsers, setDbUsers] = useState([])
   const [loading, setLoading] = useState(false)
+  const [selectedFreelancer, setSelectedFreelancer] = useState(null)
+  const [skillFilter, setSkillFilter] = useState('All')
+
+  const skillCategories = ['All', 'Community Management', 'Business Development', 'Development', 'Social Media', 'Writing']
 
   const searchGigs = (value) => {
-    if (!value.trim()) { setResults([]); return }
+    if (!value.trim()) { setGigResults([]); return }
     const lower = value.toLowerCase()
-    setResults(SAMPLE_GIGS.filter(g =>
+    setGigResults(SAMPLE_GIGS.filter(g =>
       g.title.toLowerCase().includes(lower) ||
       g.company.toLowerCase().includes(lower) ||
       g.category.toLowerCase().includes(lower) ||
@@ -844,13 +881,13 @@ function SearchPage({ colors, dark, tgUser }) {
     ))
   }
 
-  const searchUsers = async (value) => {
-    if (!value.trim()) { setUsers([]); return }
+  const searchDbUsers = async (value) => {
+    if (!value.trim()) { setDbUsers([]); return }
     setLoading(true)
     try {
       const res = await fetch(`${API}/api/users/search?q=${encodeURIComponent(value)}`)
       const data = await res.json()
-      setUsers(Array.isArray(data) ? data : [])
+      setDbUsers(Array.isArray(data) ? data : [])
     } catch (err) { console.error(err) }
     setLoading(false)
   }
@@ -858,75 +895,118 @@ function SearchPage({ colors, dark, tgUser }) {
   const handleSearch = (value) => {
     setQuery(value)
     if (mode === 'gigs') searchGigs(value)
-    else searchUsers(value)
+    else searchDbUsers(value)
   }
 
-  const handleModeSwitch = (newMode) => {
-    haptic('light'); setMode(newMode); setQuery(''); setResults([]); setUsers([])
-  }
+  // Filter sample freelancers by skill category + query
+  const filteredFreelancers = SAMPLE_FREELANCERS.filter(f => {
+    const matchesSkill = skillFilter === 'All' || f.skills.some(s => s.toLowerCase().includes(skillFilter.toLowerCase().split(' ')[0].toLowerCase()))
+    const matchesQuery = !query || f.name.toLowerCase().includes(query.toLowerCase()) || f.username.toLowerCase().includes(query.toLowerCase()) || f.skills.some(s => s.toLowerCase().includes(query.toLowerCase()))
+    return matchesSkill && matchesQuery
+  })
 
   return (
     <div style={{ padding: '24px 20px', width: '100%', boxSizing: 'border-box' }}>
       <div style={{ fontSize: '24px', fontWeight: '700', letterSpacing: '-0.5px', marginBottom: '6px' }}>Search</div>
       <div style={{ fontSize: '14px', color: colors.text2, marginBottom: '20px' }}>Find gigs or freelancers</div>
+
+      {/* Mode toggle */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-        {['gigs', 'users'].map(m => (
-          <button key={m} onClick={() => handleModeSwitch(m)} style={{ flex: 1, padding: '11px', borderRadius: '12px', background: mode === m ? colors.btnBg : colors.surface2, border: `1px solid ${mode === m ? colors.btnBg : colors.border}`, color: mode === m ? colors.btnText : colors.text2, fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
-            {m === 'gigs' ? 'Gigs' : 'Freelancers'}
+        {[{ key: 'freelancers', label: 'Freelancers' }, { key: 'gigs', label: 'Gigs' }].map(m => (
+          <button key={m.key} onClick={() => { haptic('light'); setMode(m.key); setQuery(''); setGigResults([]); setDbUsers([]) }} style={{ flex: 1, padding: '11px', borderRadius: '12px', background: mode === m.key ? colors.btnBg : colors.surface2, border: `1px solid ${mode === m.key ? colors.btnBg : colors.border}`, color: mode === m.key ? colors.btnText : colors.text2, fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+            {m.label}
           </button>
         ))}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 16px', borderRadius: '14px', background: colors.surface2, border: `1px solid ${colors.border}`, marginBottom: '20px' }}>
+
+      {/* Search bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 16px', borderRadius: '14px', background: colors.surface2, border: `1px solid ${colors.border}`, marginBottom: '16px' }}>
         <IconSearch size={16} />
-        <input value={query} onChange={e => handleSearch(e.target.value)} placeholder={mode === 'gigs' ? 'Search gigs, companies, categories...' : 'Search by name or username...'} style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: colors.text, fontSize: '14px', fontFamily: 'inherit' }} />
+        <input value={query} onChange={e => handleSearch(e.target.value)} placeholder={mode === 'gigs' ? 'Search gigs, companies...' : 'Search by name or skill...'} style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: colors.text, fontSize: '14px', fontFamily: 'inherit' }} />
         {query && <button onClick={() => handleSearch('')} style={{ background: 'none', border: 'none', color: colors.text2, fontSize: '16px', cursor: 'pointer', padding: 0 }}>×</button>}
       </div>
-      {!query && (
-        <div style={{ textAlign: 'center', padding: '40px 20px', color: colors.text2 }}>
-          <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '6px' }}>{mode === 'gigs' ? 'Search Web3 Gigs' : 'Find Freelancers'}</div>
-          <div style={{ fontSize: '13px' }}>{mode === 'gigs' ? 'Search by title, company or category' : 'Search by name or username'}</div>
-        </div>
-      )}
-      {loading && <div style={{ textAlign: 'center', padding: '30px', color: colors.text2 }}>Searching...</div>}
-      {mode === 'gigs' && query && !loading && (
-        <div>
-          <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '14px' }}>{results.length} result{results.length !== 1 ? 's' : ''} for "{query}"</div>
-          {results.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: colors.text2 }}>
-              <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '6px' }}>No gigs found</div>
-              <div style={{ fontSize: '13px' }}>Try different keywords</div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {results.map(gig => <GigCard key={gig.id} gig={gig} colors={colors} dark={dark} tgUser={tgUser} isPremium={false} bookmarks={[]} toggleBookmark={() => {}} setSelectedGig={() => {}} />)}
-            </div>
-          )}
-        </div>
-      )}
-      {mode === 'users' && query && !loading && (
-        <div>
-          <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '14px' }}>{users.length} freelancer{users.length !== 1 ? 's' : ''} found</div>
-          {users.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: colors.text2 }}>
-              <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '6px' }}>No freelancers found</div>
-              <div style={{ fontSize: '13px' }}>Try a different name or username</div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {users.map((user, i) => (
-                <div key={i} style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: colors.accentBg, border: `1px solid ${colors.accentBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700', flexShrink: 0 }}>{user.first_name?.[0] || '?'}</div>
+
+      {/* FREELANCER MODE — catalog visible by default */}
+      {mode === 'freelancers' && (
+        <>
+          {/* Skill filter chips */}
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '16px' }}>
+            {['All', 'Community', 'BD', 'Dev', 'Social', 'Writing'].map((cat, i) => {
+              const fullCat = i === 0 ? 'All' : skillCategories[i]
+              return (
+                <button key={cat} onClick={() => { haptic('light'); setSkillFilter(fullCat) }} style={{ padding: '6px 14px', borderRadius: '20px', whiteSpace: 'nowrap', background: skillFilter === fullCat ? colors.btnBg : colors.surface2, border: `1px solid ${skillFilter === fullCat ? colors.btnBg : colors.border}`, color: skillFilter === fullCat ? colors.btnText : colors.text, fontSize: '12px', fontWeight: skillFilter === fullCat ? '600' : '400', cursor: 'pointer' }}>{cat}</button>
+              )
+            })}
+          </div>
+
+          <div style={{ fontSize: '12px', color: colors.text2, marginBottom: '12px' }}>{filteredFreelancers.length} freelancer{filteredFreelancers.length !== 1 ? 's' : ''} available</div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {filteredFreelancers.map(f => (
+              <div key={f.id} onClick={() => { haptic('light'); setSelectedFreelancer(f) }} style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '16px', padding: '16px', cursor: 'pointer', transition: 'all 0.15s ease' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '10px' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(200,169,90,0.15)', border: '1px solid rgba(200,169,90,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700', color: '#C8A95A', flexShrink: 0 }}>{f.name[0]}</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '15px', fontWeight: '600' }}>{user.first_name} {user.last_name || ''}</div>
-                    <div style={{ fontSize: '13px', color: colors.text2 }}>@{user.tg_username || 'unknown'}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                      <div style={{ fontSize: '15px', fontWeight: '600' }}>{f.name}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '12px', fontWeight: '600', color: '#C8A95A' }}>
+                        <IconStar size={12} />{f.questScore}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '12px', color: colors.text2 }}>@{f.username} · {f.gigsCompleted} gigs · {f.earned}</div>
                   </div>
-                  <button onClick={() => { haptic('light'); window.open(`https://t.me/${user.tg_username}`, '_blank') }} style={{ padding: '8px 14px', borderRadius: '10px', background: colors.btnBg, border: 'none', color: colors.btnText, fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Message</button>
+                  <div style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '20px', background: f.available ? 'rgba(52,211,153,0.1)' : colors.surface2, color: f.available ? '#34d399' : colors.text2, border: `1px solid ${f.available ? 'rgba(52,211,153,0.3)' : colors.border}`, fontWeight: '600', flexShrink: 0 }}>
+                    {f.available ? 'Available' : 'Busy'}
+                  </div>
                 </div>
-              ))}
+                <div style={{ fontSize: '13px', color: colors.text2, lineHeight: 1.5, marginBottom: '10px' }}>{f.bio}</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {f.skills.map((s, i) => (
+                    <div key={i} style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: colors.accentBg, border: `1px solid ${colors.accentBorder}`, color: colors.accent }}>{s}</div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* GIGS MODE */}
+      {mode === 'gigs' && (
+        <>
+          {!query && (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: colors.text2 }}>
+              <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '6px' }}>Search Web3 Gigs</div>
+              <div style={{ fontSize: '13px' }}>Search by title, company or category</div>
             </div>
           )}
-        </div>
+          {loading && <div style={{ textAlign: 'center', padding: '30px', color: colors.text2 }}>Searching...</div>}
+          {query && !loading && (
+            <div>
+              <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '14px' }}>{gigResults.length} result{gigResults.length !== 1 ? 's' : ''} for "{query}"</div>
+              {gigResults.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: colors.text2 }}>
+                  <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '6px' }}>No gigs found</div>
+                  <div style={{ fontSize: '13px' }}>Try different keywords</div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {gigResults.map(gig => (
+                    <div key={gig.id} style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '16px', padding: '16px' }}>
+                      <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '3px' }}>{gig.title}</div>
+                      <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '8px' }}>{gig.company} · {gig.pay}</div>
+                      <div style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '6px', background: colors.surface2, color: colors.text2, display: 'inline-block' }}>{gig.category}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
+
+      {/* Freelancer detail modal */}
+      {selectedFreelancer && <FreelancerModal freelancer={selectedFreelancer} colors={colors} dark={dark} onClose={() => setSelectedFreelancer(null)} />}
     </div>
   )
 }
@@ -990,7 +1070,6 @@ function ProfilePage({ colors, dark, tgUser, isPremium, setIsPremium, notificati
   const [processing, setProcessing] = useState(false)
   const [paymentError, setPaymentError] = useState('')
   const [dropinInstance, setDropinInstance] = useState(null)
-
   const [isEditing, setIsEditing] = useState(false)
   const [bio, setBio] = useState(() => localStorage.getItem('qw_bio') || '')
   const [skills, setSkills] = useState(() => localStorage.getItem('qw_skills') || '')
@@ -999,7 +1078,6 @@ function ProfilePage({ colors, dark, tgUser, isPremium, setIsPremium, notificati
   const [savedSkills, setSavedSkills] = useState(() => localStorage.getItem('qw_skills') || '')
   const [savedAvailability, setSavedAvailability] = useState(() => localStorage.getItem('qw_availability') || 'Available')
   const [saved, setSaved] = useState(false)
-
   const [activeTab, setActiveTab] = useState('profile')
   const [lastSeen] = useState(getLastSeen())
 
@@ -1020,21 +1098,16 @@ function ProfilePage({ colors, dark, tgUser, isPremium, setIsPremium, notificati
 
   const handleSave = () => {
     haptic('heavy')
-    localStorage.setItem('qw_bio', bio)
-    localStorage.setItem('qw_skills', skills)
-    localStorage.setItem('qw_availability', availability)
+    localStorage.setItem('qw_bio', bio); localStorage.setItem('qw_skills', skills); localStorage.setItem('qw_availability', availability)
     setSavedBio(bio); setSavedSkills(skills); setSavedAvailability(availability)
     setSaved(true); setIsEditing(false)
     setTimeout(() => setSaved(false), 2500)
   }
-
   const handleEdit = () => { haptic('light'); setBio(savedBio); setSkills(savedSkills); setAvailability(savedAvailability); setIsEditing(true) }
   const handleCancel = () => { haptic('light'); setBio(savedBio); setSkills(savedSkills); setAvailability(savedAvailability); setIsEditing(false) }
 
   const displayName = tgUser ? `${tgUser.first_name} ${tgUser.last_name || ''}`.trim() : 'Guest'
   const displayUsername = tgUser?.username || 'guest'
-
-  // ── Bookmarked gigs for display ──
   const bookmarkedGigs = SAMPLE_GIGS.filter(g => bookmarks?.includes(g.id))
 
   const sections = [
@@ -1079,7 +1152,6 @@ function ProfilePage({ colors, dark, tgUser, isPremium, setIsPremium, notificati
           </div>
         </div>
 
-        {/* ── NEW: Backup email display ── */}
         {backupEmail ? (
           <div style={{ marginBottom: '12px', padding: '10px 12px', borderRadius: '10px', background: 'rgba(52,211,153,0.07)', border: '1px solid rgba(52,211,153,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
@@ -1100,7 +1172,6 @@ function ProfilePage({ colors, dark, tgUser, isPremium, setIsPremium, notificati
             <div style={{ fontSize: '13px', color: colors.text, lineHeight: 1.5 }}>{savedBio}</div>
           </div>
         )}
-
         {savedSkills && !isEditing && (
           <div style={{ marginBottom: '14px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             {savedSkills.split(',').map((s, i) => (
@@ -1112,24 +1183,17 @@ function ProfilePage({ colors, dark, tgUser, isPremium, setIsPremium, notificati
         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
           {['profile', 'bookmarks', 'applications'].map(tab => (
             <button key={tab} onClick={() => { haptic('light'); setActiveTab(tab); if (tab !== 'profile') setIsEditing(false) }} style={{ flex: 1, padding: '9px 4px', borderRadius: '10px', fontSize: '11px', fontWeight: '600', background: activeTab === tab ? colors.btnBg : colors.surface2, border: `1px solid ${activeTab === tab ? colors.btnBg : colors.border}`, color: activeTab === tab ? colors.btnText : colors.text2, cursor: 'pointer' }}>
-              {tab === 'applications' ? 'Applied' : tab === 'bookmarks' ? `Saved ${bookmarks?.length > 0 ? `(${bookmarks.length})` : ''}` : 'Profile'}
+              {tab === 'applications' ? 'Applied' : tab === 'bookmarks' ? `Saved${bookmarks?.length > 0 ? ` (${bookmarks.length})` : ''}` : 'Profile'}
             </button>
           ))}
         </div>
 
-        {/* Profile tab */}
         {activeTab === 'profile' && (
           <>
             {!isEditing ? (
               <div>
-                {!savedBio && !savedSkills && (
-                  <div style={{ textAlign: 'center', padding: '12px 0 8px', color: colors.text2 }}>
-                    <div style={{ fontSize: '13px' }}>No profile info yet. Tap Edit Profile to get started.</div>
-                  </div>
-                )}
-                {saved && (
-                  <div style={{ marginBottom: '12px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399', fontSize: '13px', textAlign: 'center', fontWeight: '600' }}>✓ Profile saved!</div>
-                )}
+                {!savedBio && !savedSkills && <div style={{ textAlign: 'center', padding: '12px 0 8px', color: colors.text2 }}><div style={{ fontSize: '13px' }}>No profile info yet. Tap Edit Profile to get started.</div></div>}
+                {saved && <div style={{ marginBottom: '12px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399', fontSize: '13px', textAlign: 'center', fontWeight: '600' }}>✓ Profile saved!</div>}
                 <button onClick={handleEdit} style={{ width: '100%', padding: '13px', borderRadius: '12px', background: colors.surface2, border: `1px solid ${colors.border}`, color: colors.text, fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>✏️ Edit Profile</button>
               </div>
             ) : (
@@ -1159,7 +1223,6 @@ function ProfilePage({ colors, dark, tgUser, isPremium, setIsPremium, notificati
           </>
         )}
 
-        {/* ── NEW: Bookmarks tab ── */}
         {activeTab === 'bookmarks' && (
           <div>
             {bookmarkedGigs.length === 0 ? (
@@ -1197,7 +1260,6 @@ function ProfilePage({ colors, dark, tgUser, isPremium, setIsPremium, notificati
         ))}
       </div>
 
-      {/* Upgrade banner */}
       {!isPremium && (
         <div onClick={() => { haptic('medium'); setShowPayment(true) }} style={{ background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${colors.accentBorder}`, borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', cursor: 'pointer' }}>
           <div>
@@ -1208,7 +1270,6 @@ function ProfilePage({ colors, dark, tgUser, isPremium, setIsPremium, notificati
         </div>
       )}
 
-      {/* Digital Products */}
       <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '16px', padding: '16px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -1239,13 +1300,13 @@ function ProfilePage({ colors, dark, tgUser, isPremium, setIsPremium, notificati
         <div style={{ fontSize: '11px', color: colors.text2, marginTop: '2px', opacity: 0.6 }}>Web3 Freelance Network</div>
       </div>
 
-      {/* ── NEW: Founder Section ── */}
+      {/* FIX 6: Founder section — corrected name */}
       <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '20px', padding: '20px', marginTop: '16px', marginBottom: '20px' }}>
         <div style={{ fontSize: '11px', fontWeight: '600', color: colors.text2, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '14px', textAlign: 'center' }}>Meet the Founder</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
-          <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(200,169,90,0.3), rgba(200,169,90,0.1))', border: '2px solid rgba(200,169,90,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', fontWeight: '700', color: '#C8A95A', flexShrink: 0 }}>A</div>
+          <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(200,169,90,0.15)', border: '2px solid rgba(200,169,90,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', fontWeight: '700', color: '#C8A95A', flexShrink: 0 }}>A</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '2px' }}>Al-amin Abdullahi</div>
+            <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '2px' }}>Aminu Abdulhamid</div>
             <div style={{ fontSize: '12px', color: colors.text2 }}>Founder & CEO, QuestWork</div>
             <div style={{ fontSize: '12px', color: '#C8A95A', marginTop: '2px' }}>@TheCryptoQuestHub</div>
           </div>
