@@ -3,6 +3,7 @@ import cors from 'cors'
 import { neon } from '@neondatabase/serverless'
 import dotenv from 'dotenv'
 import braintree from 'braintree'
+import TelegramBot from 'node-telegram-bot-api'
 
 dotenv.config()
 
@@ -19,7 +20,10 @@ const gateway = new braintree.BraintreeGateway({
   privateKey: process.env.BRAINTREE_PRIVATE_KEY,
 })
 
-// Get all gigs
+// ─────────────────────────────────────────
+// GIGS
+// ─────────────────────────────────────────
+
 app.get('/api/gigs', async (req, res) => {
   try {
     const gigs = await sql`SELECT * FROM gigs WHERE is_active = true ORDER BY created_at DESC`
@@ -29,7 +33,6 @@ app.get('/api/gigs', async (req, res) => {
   }
 })
 
-// Post a gig
 app.post('/api/gigs', async (req, res) => {
   try {
     const { title, category, description, pay_usdt, duration, region, poster_tg_id, poster_username } = req.body
@@ -43,7 +46,10 @@ app.post('/api/gigs', async (req, res) => {
   }
 })
 
-// Post an application
+// ─────────────────────────────────────────
+// APPLICATIONS
+// ─────────────────────────────────────────
+
 app.post('/api/applications', async (req, res) => {
   try {
     const { gig_id, applicant_tg_id, applicant_username, pitch } = req.body
@@ -57,7 +63,31 @@ app.post('/api/applications', async (req, res) => {
   }
 })
 
-// Save or update user
+app.get('/api/applications/received/:tg_id', async (req, res) => {
+  try {
+    const { tg_id } = req.params
+    const applications = await sql`
+      SELECT
+        a.id, a.applicant_tg_id, a.applicant_username,
+        a.pitch, a.status, a.created_at,
+        g.title as gig_title
+      FROM applications a
+      JOIN gigs g ON a.gig_id = g.id
+      WHERE g.poster_tg_id = ${tg_id}
+      ORDER BY a.created_at DESC
+    `
+    res.json(applications)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ─────────────────────────────────────────
+// USERS
+// ⚠️ search and photo routes MUST come
+//    before /:tg_id to avoid conflicts
+// ─────────────────────────────────────────
+
 app.post('/api/users', async (req, res) => {
   try {
     const { tg_id, tg_username, first_name, last_name } = req.body
@@ -75,8 +105,6 @@ app.post('/api/users', async (req, res) => {
   }
 })
 
-// ⚠️ IMPORTANT: /api/users/search MUST be before /api/users/:tg_id
-// Search users
 app.get('/api/users/search', async (req, res) => {
   try {
     const { q } = req.query
@@ -92,7 +120,24 @@ app.get('/api/users/search', async (req, res) => {
   }
 })
 
-// Get user by tg_id
+app.get('/api/users/photo/:tg_id', async (req, res) => {
+  try {
+    const { tg_id } = req.params
+    const BOT_TOKEN = process.env.BOT_TOKEN
+    const profileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUserProfilePhotos?user_id=${tg_id}&limit=1`)
+    const profileData = await profileRes.json()
+    const fileId = profileData?.result?.photos?.[0]?.[0]?.file_id
+    if (!fileId) return res.json({ photo_url: null })
+    const fileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`)
+    const fileData = await fileRes.json()
+    const filePath = fileData?.result?.file_path
+    if (!filePath) return res.json({ photo_url: null })
+    res.json({ photo_url: `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}` })
+  } catch (err) {
+    res.json({ photo_url: null })
+  }
+})
+
 app.get('/api/users/:tg_id', async (req, res) => {
   try {
     const { tg_id } = req.params
@@ -103,7 +148,140 @@ app.get('/api/users/:tg_id', async (req, res) => {
   }
 })
 
-// Send Telegram notification
+// ─────────────────────────────────────────
+// NEW: BACKUP LOGIN
+// Saves email + hashed password per user
+// for Telegram ban fallback login
+// ─────────────────────────────────────────
+
+app.post('/api/users/:tg_id/backup-login', async (req, res) => {
+  try {
+    const { tg_id } = req.params
+    const { email, password } = req.body
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' })
+    const { createHash } = await import('crypto')
+    const hashed = createHash('sha256')
+      .update(password + (process.env.PASSWORD_SALT || 'questwork_salt_2024'))
+      .digest('hex')
+    await sql`
+      UPDATE users
+      SET backup_email = ${email.toLowerCase().trim()},
+          backup_password = ${hashed}
+      WHERE tg_id = ${String(tg_id)}
+    `
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ─────────────────────────────────────────
+// NEW: MESSAGES
+// Full in-app messaging system
+// ─────────────────────────────────────────
+
+// Send a message
+app.post('/api/messages', async (req, res) => {
+  try {
+    const { sender_tg_id, receiver_tg_id, content } = req.body
+    if (!sender_tg_id || !receiver_tg_id || !content) {
+      return res.status(400).json({ error: 'Missing required fields' })
+    }
+    await sql`
+      INSERT INTO messages (sender_tg_id, receiver_tg_id, content, is_read, created_at)
+      VALUES (${String(sender_tg_id)}, ${String(receiver_tg_id)}, ${content}, false, NOW())
+    `
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// NEW: Unread count — MUST be before /api/messages/:id1/:id2
+app.get('/api/messages/unread/:tg_id', async (req, res) => {
+  try {
+    const { tg_id } = req.params
+    const result = await sql`
+      SELECT COUNT(*) as count
+      FROM messages
+      WHERE receiver_tg_id = ${String(tg_id)}
+        AND is_read = false
+    `
+    res.json({ count: parseInt(result[0]?.count || 0) })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// NEW: All message threads for a user
+app.get('/api/messages/threads/:tg_id', async (req, res) => {
+  try {
+    const { tg_id } = req.params
+    const threads = await sql`
+      SELECT
+        other_tg_id,
+        MAX(other_name) as other_name,
+        MAX(last_message) as last_message,
+        MAX(last_time) as last_time,
+        SUM(unread) as unread_count
+      FROM (
+        SELECT
+          CASE
+            WHEN sender_tg_id = ${String(tg_id)} THEN receiver_tg_id
+            ELSE sender_tg_id
+          END as other_tg_id,
+          (
+            SELECT first_name FROM users u
+            WHERE u.tg_id = CASE
+              WHEN m.sender_tg_id = ${String(tg_id)} THEN m.receiver_tg_id
+              ELSE m.sender_tg_id
+            END
+            LIMIT 1
+          ) as other_name,
+          content as last_message,
+          created_at as last_time,
+          CASE WHEN receiver_tg_id = ${String(tg_id)} AND is_read = false THEN 1 ELSE 0 END as unread
+        FROM messages m
+        WHERE sender_tg_id = ${String(tg_id)}
+           OR receiver_tg_id = ${String(tg_id)}
+      ) sub
+      GROUP BY other_tg_id
+      ORDER BY MAX(last_time) DESC
+    `
+    res.json(threads)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Get conversation between two users + mark as read
+app.get('/api/messages/:tg_id_1/:tg_id_2', async (req, res) => {
+  try {
+    const { tg_id_1, tg_id_2 } = req.params
+    const msgs = await sql`
+      SELECT * FROM messages
+      WHERE (sender_tg_id = ${String(tg_id_1)} AND receiver_tg_id = ${String(tg_id_2)})
+         OR (sender_tg_id = ${String(tg_id_2)} AND receiver_tg_id = ${String(tg_id_1)})
+      ORDER BY created_at ASC
+      LIMIT 100
+    `
+    await sql`
+      UPDATE messages
+      SET is_read = true
+      WHERE receiver_tg_id = ${String(tg_id_1)}
+        AND sender_tg_id = ${String(tg_id_2)}
+        AND is_read = false
+    `
+    res.json(msgs)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ─────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────
+
 app.post('/api/notify', async (req, res) => {
   try {
     const { chat_id, message } = req.body
@@ -119,7 +297,10 @@ app.post('/api/notify', async (req, res) => {
   }
 })
 
-// AI Pitch Writer
+// ─────────────────────────────────────────
+// AI ROUTES
+// ─────────────────────────────────────────
+
 app.post('/api/ai/pitch', async (req, res) => {
   try {
     const { gig_title, gig_company, user_skills, user_bio } = req.body
@@ -146,7 +327,6 @@ app.post('/api/ai/pitch', async (req, res) => {
   }
 })
 
-// AI Gig Description Writer
 app.post('/api/ai/gig', async (req, res) => {
   try {
     const { basic_info } = req.body
@@ -173,27 +353,10 @@ app.post('/api/ai/gig', async (req, res) => {
   }
 })
 
-// Get applications received by a gig poster
-app.get('/api/applications/received/:tg_id', async (req, res) => {
-  try {
-    const { tg_id } = req.params
-    const applications = await sql`
-      SELECT
-        a.id, a.applicant_tg_id, a.applicant_username,
-        a.pitch, a.status, a.created_at,
-        g.title as gig_title
-      FROM applications a
-      JOIN gigs g ON a.gig_id = g.id
-      WHERE g.poster_tg_id = ${tg_id}
-      ORDER BY a.created_at DESC
-    `
-    res.json(applications)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
+// ─────────────────────────────────────────
+// EXTERNAL GIGS (web3.career sync)
+// ─────────────────────────────────────────
 
-// Web3.career API sync
 const fetchWeb3Jobs = async () => {
   try {
     const res = await fetch('https://web3.career/api/v1/jobs?token=WXFnYiuMV5ydYG9iHZegWy2pNVFduW2P', {
@@ -206,8 +369,8 @@ const fetchWeb3Jobs = async () => {
       let category = 'Other'
       if (title.includes('community') || title.includes('discord') || title.includes('telegram')) category = 'Community Management'
       else if (title.includes('business') || title.includes('bd') || title.includes('partnership')) category = 'Business Development'
-      else if (title.includes('dev') || title.includes('engineer') || title.includes('solidity')) category = 'Dev'
-      else if (title.includes('social') || title.includes('twitter') || title.includes('content') || title.includes('marketing')) category = 'Social'
+      else if (title.includes('dev') || title.includes('engineer') || title.includes('solidity')) category = 'Development'
+      else if (title.includes('social') || title.includes('twitter') || title.includes('content') || title.includes('marketing')) category = 'Social Media'
       await sql`
         INSERT INTO external_gigs (job_id, title, company, location, salary, apply_url, posted_at, category)
         VALUES (${String(job.id)}, ${job.title}, ${job.company}, ${job.location}, ${job.salary}, ${job.url}, ${job.date}, ${category})
@@ -223,7 +386,6 @@ const fetchWeb3Jobs = async () => {
 fetchWeb3Jobs()
 setInterval(fetchWeb3Jobs, 60 * 60 * 1000)
 
-// Get external gigs
 app.get('/api/external-gigs', async (req, res) => {
   try {
     const result = await sql`SELECT * FROM external_gigs ORDER BY posted_at DESC LIMIT 100`
@@ -233,7 +395,10 @@ app.get('/api/external-gigs', async (req, res) => {
   }
 })
 
-// Braintree: Get client token
+// ─────────────────────────────────────────
+// BRAINTREE PAYMENTS
+// ─────────────────────────────────────────
+
 app.get('/api/braintree/token', async (req, res) => {
   try {
     const response = await gateway.clientToken.generate({})
@@ -243,7 +408,6 @@ app.get('/api/braintree/token', async (req, res) => {
   }
 })
 
-// Braintree: Create subscription
 app.post('/api/braintree/subscribe', async (req, res) => {
   try {
     const { paymentMethodNonce, tg_id } = req.body
@@ -262,7 +426,6 @@ app.post('/api/braintree/subscribe', async (req, res) => {
   }
 })
 
-// Braintree: Cancel subscription
 app.post('/api/braintree/cancel', async (req, res) => {
   try {
     const { tg_id } = req.body
@@ -277,7 +440,6 @@ app.post('/api/braintree/cancel', async (req, res) => {
   }
 })
 
-// Admin: Manual premium upgrade
 app.post('/api/admin/premium', async (req, res) => {
   try {
     const { tg_id, is_premium } = req.body
@@ -288,20 +450,32 @@ app.post('/api/admin/premium', async (req, res) => {
   }
 })
 
-// Telegram Bot - Admin Commands
-import TelegramBot from 'node-telegram-bot-api'
+// ─────────────────────────────────────────
+// TELEGRAM BOT
+// ─────────────────────────────────────────
 
 const bot = new TelegramBot(process.env.BOT_TOKEN, {
   polling: {
     autoStart: true,
-    params: {
-      timeout: 10
-    }
+    params: { timeout: 10 }
   }
 })
 
 bot.on('polling_error', (err) => {
   console.log('Bot polling error:', err.code)
+})
+
+bot.onText(/\/start/, (msg) => {
+  bot.sendMessage(msg.chat.id, 'Welcome to QuestWork! 🚀\nFind Web3 gigs and get paid in crypto.', {
+    reply_markup: {
+      inline_keyboard: [[
+        {
+          text: '🚀 Open QuestWork',
+          web_app: { url: 'https://questwork-green.vercel.app' }
+        }
+      ]]
+    }
+  })
 })
 
 bot.onText(/\/upgrade (.+)/, async (msg, match) => {
@@ -328,36 +502,10 @@ bot.onText(/\/downgrade (.+)/, async (msg, match) => {
     bot.sendMessage(msg.chat.id, `❌ Error: ${err.message}`)
   }
 })
-// Get Telegram profile photo
-app.get('/api/users/photo/:tg_id', async (req, res) => {
-  try {
-    const { tg_id } = req.params
-    const BOT_TOKEN = process.env.BOT_TOKEN
-    const profileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUserProfilePhotos?user_id=${tg_id}&limit=1`)
-    const profileData = await profileRes.json()
-    const fileId = profileData?.result?.photos?.[0]?.[0]?.file_id
-    if (!fileId) return res.json({ photo_url: null })
-    const fileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`)
-    const fileData = await fileRes.json()
-    const filePath = fileData?.result?.file_path
-    if (!filePath) return res.json({ photo_url: null })
-    res.json({ photo_url: `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}` })
-  } catch (err) {
-    res.json({ photo_url: null })
-  }
-})
-// /start command - sends Mini App launch button
-bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, 'Welcome to QuestWork! 🚀\nFind Web3 gigs and get paid in crypto.', {
-    reply_markup: {
-      inline_keyboard: [[
-        {
-          text: '🚀 Open QuestWork',
-          web_app: { url: 'https://questwork-green.vercel.app' }
-        }
-      ]]
-    }
-  })
-})
+
+// ─────────────────────────────────────────
+// START SERVER
+// ─────────────────────────────────────────
+
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => console.log(`QuestWork API running on port ${PORT}`))
