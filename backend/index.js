@@ -1,125 +1,259 @@
-import express from 'express'
-import cors from 'cors'
-import { neon } from '@neondatabase/serverless'
-import dotenv from 'dotenv'
-import braintree from 'braintree'
-import TelegramBot from 'node-telegram-bot-api'
+// ============================================================
+// QuestWork Backend — index.js
+// Deploy to: Railway
+// Node.js + Express + PostgreSQL (Neon DB)
+// ============================================================
 
-dotenv.config()
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const { Pool } = require('pg');
 
-const app = express()
-app.use(cors())
-app.use(express.json())
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-const sql = neon(process.env.DATABASE_URL)
+// ─────────────────────────────────────────
+// DATABASE
+// ─────────────────────────────────────────
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-const gateway = new braintree.BraintreeGateway({
+// ─────────────────────────────────────────
+// LAZY IMPORTS (CommonJS compat)
+// ─────────────────────────────────────────
+let fetch;
+(async () => { fetch = (await import('node-fetch')).default; })();
+
+// ─────────────────────────────────────────
+// TELEGRAM BOT (webhook / polling off)
+// ─────────────────────────────────────────
+const TelegramBot = require('node-telegram-bot-api');
+const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: false });
+
+// ─────────────────────────────────────────
+// BRAINTREE
+// ─────────────────────────────────────────
+const braintree = require('braintree');
+const btGateway = braintree.connect({
   environment: braintree.Environment.Sandbox,
   merchantId: process.env.BRAINTREE_MERCHANT_ID,
-  publicKey: process.env.BRAINTREE_PUBLIC_KEY,
+  publicKey:  process.env.BRAINTREE_PUBLIC_KEY,
   privateKey: process.env.BRAINTREE_PRIVATE_KEY,
-})
+});
 
 // ─────────────────────────────────────────
-// RUN THESE SQL STATEMENTS IN NEON CONSOLE
-// to add new columns/tables before deploying
-//
-// ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT false;
-// ALTER TABLE messages ADD COLUMN IF NOT EXISTS blocked_reason TEXT;
-// ALTER TABLE messages ADD COLUMN IF NOT EXISTS file_url TEXT;
-// ALTER TABLE messages ADD COLUMN IF NOT EXISTS file_name TEXT;
-// ALTER TABLE messages ADD COLUMN IF NOT EXISTS msg_type TEXT DEFAULT 'text';
-// ALTER TABLE users ADD COLUMN IF NOT EXISTS quest_score INTEGER DEFAULT 0;
-// ALTER TABLE users ADD COLUMN IF NOT EXISTS jobs_completed INTEGER DEFAULT 0;
-// ALTER TABLE users ADD COLUMN IF NOT EXISTS wallet_address TEXT;
-//
-// CREATE TABLE IF NOT EXISTS escrow_contracts (
-//   id SERIAL PRIMARY KEY,
-//   gig_id TEXT,
-//   client_tg_id TEXT,
-//   freelancer_tg_id TEXT,
-//   contract_address TEXT NOT NULL,
-//   amount_ton TEXT NOT NULL,
-//   amount_usdt TEXT,
-//   status TEXT DEFAULT 'funded',
-//   tx_hash TEXT,
-//   release_tx TEXT,
-//   created_at TIMESTAMPTZ DEFAULT NOW(),
-//   released_at TIMESTAMPTZ
-// );
-//
-// CREATE TABLE IF NOT EXISTS work_submissions (
-//   id SERIAL PRIMARY KEY,
-//   gig_id TEXT,
-//   client_tg_id TEXT,
-//   freelancer_tg_id TEXT,
-//   note TEXT,
-//   file_url TEXT,
-//   link_url TEXT,
-//   status TEXT DEFAULT 'pending',
-//   submitted_at TIMESTAMPTZ DEFAULT NOW(),
-//   reviewed_at TIMESTAMPTZ
-// );
+// ANTHROPIC
 // ─────────────────────────────────────────
+const Anthropic = require('@anthropic-ai/sdk');
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// ============================================================
+// DB INIT — creates all tables on startup
+// ============================================================
+async function initDB() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      tg_id            TEXT PRIMARY KEY,
+      tg_username      TEXT,
+      first_name       TEXT,
+      last_name        TEXT,
+      bio              TEXT,
+      skills           TEXT,
+      availability     TEXT DEFAULT 'Available',
+      wallet_address   TEXT,
+      is_premium       BOOLEAN DEFAULT FALSE,
+      subscription_id  TEXT,
+      dm_enabled       BOOLEAN DEFAULT TRUE,
+      quest_score      INTEGER DEFAULT 0,
+      jobs_completed   INTEGER DEFAULT 0,
+      created_at       TIMESTAMPTZ DEFAULT NOW()
+    );
 
-// ─────────────────────────────────────────
-// CONTACT INFO DETECTION
-// ─────────────────────────────────────────
-const CONTACT_PATTERNS = [
-  { pattern: /(\+?\d[\d\s\-().]{7,}\d)/g,                          reason: 'phone number' },
-  { pattern: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,  reason: 'email address' },
-  { pattern: /(?<![a-zA-Z])@[a-zA-Z0-9_]{3,}/g,                   reason: 'social handle' },
-  { pattern: /whatsapp[\s:.\-]*[\d\s+()]{7,}/gi,                   reason: 'WhatsApp number' },
-  { pattern: /instagram\.com\/[a-zA-Z0-9_.]+/gi,                   reason: 'Instagram profile' },
-  { pattern: /\bIG[\s:]+@?[a-zA-Z0-9_.]{3,}/gi,                   reason: 'Instagram handle' },
-  { pattern: /twitter\.com\/[a-zA-Z0-9_]+/gi,                      reason: 'Twitter profile' },
-  { pattern: /x\.com\/[a-zA-Z0-9_]+/gi,                            reason: 'X profile' },
-  { pattern: /linkedin\.com\/in\/[a-zA-Z0-9_\-]+/gi,              reason: 'LinkedIn profile' },
-  { pattern: /discord[\s:.]*[a-zA-Z0-9_#]{3,}/gi,                  reason: 'Discord handle' },
-  { pattern: /t\.me\/[a-zA-Z0-9_]+/gi,                             reason: 'Telegram link' },
-  { pattern: /\b(wa\.me|api\.whatsapp)\//gi,                       reason: 'WhatsApp link' },
-]
+    CREATE TABLE IF NOT EXISTS gigs (
+      id              SERIAL PRIMARY KEY,
+      title           TEXT NOT NULL,
+      category        TEXT,
+      description     TEXT,
+      pay_usdt        TEXT,
+      duration        TEXT,
+      region          TEXT DEFAULT 'Global',
+      poster_tg_id    TEXT,
+      poster_username TEXT,
+      source          TEXT DEFAULT 'questwork',
+      apply_url       TEXT,
+      featured        BOOLEAN DEFAULT FALSE,
+      created_at      TIMESTAMPTZ DEFAULT NOW()
+    );
 
-function detectContactInfo(text) {
-  if (!text || typeof text !== 'string') return { blocked: false }
-  for (const { pattern, reason } of CONTACT_PATTERNS) {
-    pattern.lastIndex = 0
-    if (pattern.test(text)) {
-      return {
-        blocked: true,
-        reason: `Message blocked — contains ${reason}. Keep all communication on QuestWork to stay protected.`,
-      }
-    }
-  }
-  return { blocked: false }
+    CREATE TABLE IF NOT EXISTS applications (
+      id                  SERIAL PRIMARY KEY,
+      gig_id              TEXT,
+      gig_title           TEXT,
+      applicant_tg_id     TEXT,
+      applicant_username  TEXT,
+      pitch               TEXT,
+      status              TEXT DEFAULT 'Pending',
+      created_at          TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS messages (
+      id              SERIAL PRIMARY KEY,
+      sender_tg_id    TEXT NOT NULL,
+      receiver_tg_id  TEXT NOT NULL,
+      content         TEXT,
+      msg_type        TEXT DEFAULT 'text',
+      file_url        TEXT,
+      file_name       TEXT,
+      is_read         BOOLEAN DEFAULT FALSE,
+      created_at      TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS escrow_contracts (
+      id                  SERIAL PRIMARY KEY,
+      gig_id              TEXT,
+      gig_title           TEXT,
+      client_tg_id        TEXT NOT NULL,
+      freelancer_tg_id    TEXT NOT NULL,
+      contract_address    TEXT DEFAULT 'EQDucZhNYIW5TwinCcwmdPqzjz7yt_MpA7YfMS-B4rInPcis',
+      amount_ton          TEXT NOT NULL,
+      amount_usdt         TEXT,
+      status              TEXT DEFAULT 'funded',
+      tx_hash             TEXT,
+      release_tx          TEXT,
+      created_at          TIMESTAMPTZ DEFAULT NOW(),
+      released_at         TIMESTAMPTZ
+    );
+
+    CREATE TABLE IF NOT EXISTS work_submissions (
+      id                  SERIAL PRIMARY KEY,
+      contract_id         INTEGER REFERENCES escrow_contracts(id),
+      gig_id              TEXT,
+      gig_title           TEXT,
+      client_tg_id        TEXT NOT NULL,
+      freelancer_tg_id    TEXT NOT NULL,
+      note                TEXT,
+      file_url            TEXT,
+      link_url            TEXT,
+      status              TEXT DEFAULT 'pending',
+      submitted_at        TIMESTAMPTZ DEFAULT NOW(),
+      reviewed_at         TIMESTAMPTZ
+    );
+  `);
+  console.log('✅ DB tables ready');
 }
 
+// ============================================================
+// CONTACT INFO DETECTION — blocks phone/email/social in messages
+// ============================================================
+function containsContactInfo(text) {
+  if (!text) return false;
+  const patterns = [
+    /(\+?\d[\d\s\-().]{7,}\d)/,                        // phone numbers
+    /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/, // email
+    /(?:t\.me|telegram\.me)\/[a-zA-Z0-9_]+/i,           // telegram links
+    /(?:wa\.me|whatsapp\.com)\/[0-9]+/i,                 // whatsapp links
+    /(?:instagram\.com|ig\.me)\/[a-zA-Z0-9_.]+/i,       // instagram
+    /(?:twitter\.com|x\.com)\/[a-zA-Z0-9_]+/i,          // twitter/x
+    /(?:discord\.gg|discord\.com\/invite)\/[a-zA-Z0-9]+/i, // discord invites
+    /\bskype:[a-zA-Z0-9._\-]+/i,                        // skype
+    /\b@[a-zA-Z0-9_]{3,}\b/,                            // @username handles
+  ];
+  return patterns.some(p => p.test(text));
+}
+
+// ============================================================
+// ROUTES
+// ============================================================
+
+// Health check
+app.get('/', (req, res) => res.json({ status: 'QuestWork API running' }));
 
 // ─────────────────────────────────────────
-// QUESTSCORE RECALCULATION
+// USERS
 // ─────────────────────────────────────────
-async function recalcQuestScore(tg_id) {
+
+// Register / upsert user on login
+app.post('/api/users', async (req, res) => {
+  const { tg_id, tg_username, first_name, last_name } = req.body;
+  if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
   try {
-    const result = await sql`
-      SELECT COUNT(*) as count FROM work_submissions
-      WHERE freelancer_tg_id = ${String(tg_id)} AND status = 'approved'
-    `
-    const completed = parseInt(result[0]?.count || 0, 10)
-    const user = await sql`SELECT is_premium FROM users WHERE tg_id = ${String(tg_id)}`
-    const premiumBonus = user[0]?.is_premium ? 5 : 0
-    const score = Math.min(20 + completed * 12 + premiumBonus, 100)
-    await sql`
-      UPDATE users SET quest_score = ${score}, jobs_completed = ${completed}
-      WHERE tg_id = ${String(tg_id)}
-    `
-    return score
+    await pool.query(`
+      INSERT INTO users (tg_id, tg_username, first_name, last_name)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (tg_id) DO UPDATE SET
+        tg_username = EXCLUDED.tg_username,
+        first_name  = EXCLUDED.first_name,
+        last_name   = EXCLUDED.last_name
+    `, [String(tg_id), tg_username || '', first_name || '', last_name || '']);
+    res.json({ success: true });
   } catch (err) {
-    console.error('QuestScore recalc error:', err.message)
-    return 0
+    console.error('POST /api/users:', err.message);
+    res.status(500).json({ error: err.message });
   }
-}
+});
 
+// Search users — MUST be before /:tg_id
+app.get('/api/users/search', async (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.json([]);
+  try {
+    const { rows } = await pool.query(`
+      SELECT tg_id, tg_username, first_name, last_name, bio, skills, availability, quest_score, jobs_completed, dm_enabled, is_premium
+      FROM users
+      WHERE dm_enabled = TRUE
+        AND (
+          LOWER(first_name) LIKE $1 OR
+          LOWER(last_name)  LIKE $1 OR
+          LOWER(tg_username) LIKE $1 OR
+          LOWER(skills)      LIKE $1
+        )
+      LIMIT 20
+    `, [`%${q.toLowerCase()}%`]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Backup login
+app.post('/api/users/backup-login', async (req, res) => {
+  const { email, password } = req.body;
+  // Store hashed in production — for now just acknowledge
+  res.json({ success: true });
+});
+
+// Get user by tg_id
+app.get('/api/users/:tg_id', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM users WHERE tg_id = $1',
+      [req.params.tg_id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'User not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update user profile (bio, skills, availability, wallet, dm_enabled)
+app.patch('/api/users/:tg_id', async (req, res) => {
+  const { bio, skills, availability, wallet_address, dm_enabled } = req.body;
+  try {
+    await pool.query(`
+      UPDATE users SET
+        bio            = COALESCE($1, bio),
+        skills         = COALESCE($2, skills),
+        availability   = COALESCE($3, availability),
+        wallet_address = COALESCE($4, wallet_address),
+        dm_enabled     = COALESCE($5, dm_enabled)
+      WHERE tg_id = $6
+    `, [bio, skills, availability, wallet_address, dm_enabled, req.params.tg_id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─────────────────────────────────────────
 // GIGS
@@ -127,547 +261,588 @@ async function recalcQuestScore(tg_id) {
 
 app.get('/api/gigs', async (req, res) => {
   try {
-    const gigs = await sql`SELECT * FROM gigs WHERE is_active = true ORDER BY created_at DESC`
-    res.json(gigs)
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
+    const { rows } = await pool.query('SELECT * FROM gigs ORDER BY created_at DESC LIMIT 100');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.post('/api/gigs', async (req, res) => {
+  const { title, category, description, pay_usdt, duration, region, poster_tg_id, poster_username } = req.body;
+  if (!title || !description) return res.status(400).json({ error: 'title and description required' });
   try {
-    const { title, category, description, pay_usdt, duration, region, poster_tg_id, poster_username } = req.body
-    await sql`
-      INSERT INTO gigs (title, category, description, pay_usdt, duration, region, poster_tg_id, poster_username, is_active)
-      VALUES (${title}, ${category}, ${description}, ${pay_usdt}, ${duration}, ${region}, ${poster_tg_id}, ${poster_username}, true)
-    `
-    res.json({ success: true })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
+    const { rows } = await pool.query(`
+      INSERT INTO gigs (title, category, description, pay_usdt, duration, region, poster_tg_id, poster_username)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      RETURNING *
+    `, [title, category, description, pay_usdt, duration, region || 'Global', poster_tg_id, poster_username]);
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─────────────────────────────────────────
 // APPLICATIONS
 // ─────────────────────────────────────────
 
 app.post('/api/applications', async (req, res) => {
+  const { gig_id, gig_title, applicant_tg_id, applicant_username, pitch } = req.body;
   try {
-    const { gig_id, applicant_tg_id, applicant_username, pitch } = req.body
-    await sql`
-      INSERT INTO applications (gig_id, applicant_tg_id, applicant_username, pitch, status)
-      VALUES (${gig_id}, ${applicant_tg_id}, ${applicant_username}, ${pitch}, 'pending')
-    `
-    res.json({ success: true })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
+    const { rows } = await pool.query(`
+      INSERT INTO applications (gig_id, gig_title, applicant_tg_id, applicant_username, pitch)
+      VALUES ($1,$2,$3,$4,$5)
+      RETURNING *
+    `, [gig_id, gig_title, applicant_tg_id, applicant_username, pitch]);
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.get('/api/applications/received/:tg_id', async (req, res) => {
   try {
-    const { tg_id } = req.params
-    const applications = await sql`
-      SELECT a.id, a.applicant_tg_id, a.applicant_username,
-             a.pitch, a.status, a.created_at, g.title as gig_title
+    const { rows } = await pool.query(`
+      SELECT a.*, g.title AS gig_title
       FROM applications a
-      JOIN gigs g ON a.gig_id = g.id
-      WHERE g.poster_tg_id = ${tg_id}
+      LEFT JOIN gigs g ON g.id::TEXT = a.gig_id
+      WHERE g.poster_tg_id = $1
       ORDER BY a.created_at DESC
-    `
-    res.json(applications)
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
+    `, [req.params.tg_id]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
+app.get('/api/applications/sent/:tg_id', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM applications WHERE applicant_tg_id = $1 ORDER BY created_at DESC',
+      [req.params.tg_id]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─────────────────────────────────────────
-// USERS — search/photo MUST be before /:tg_id
+// MESSAGES
 // ─────────────────────────────────────────
 
-app.post('/api/users', async (req, res) => {
-  try {
-    const { tg_id, tg_username, first_name, last_name } = req.body
-    await sql`
-      INSERT INTO users (tg_id, tg_username, first_name, last_name)
-      VALUES (${tg_id}, ${tg_username}, ${first_name}, ${last_name})
-      ON CONFLICT (tg_id) DO UPDATE
-      SET tg_username = ${tg_username}, first_name = ${first_name}, last_name = ${last_name}
-    `
-    res.json({ success: true })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-app.get('/api/users/search', async (req, res) => {
-  try {
-    const { q } = req.query
-    const users = await sql`
-      SELECT * FROM users
-      WHERE first_name ILIKE ${'%' + q + '%'} OR tg_username ILIKE ${'%' + q + '%'}
-      LIMIT 20
-    `
-    res.json(users || [])
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-app.get('/api/users/photo/:tg_id', async (req, res) => {
-  try {
-    const { tg_id } = req.params
-    const BOT_TOKEN = process.env.BOT_TOKEN
-    const profileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUserProfilePhotos?user_id=${tg_id}&limit=1`)
-    const profileData = await profileRes.json()
-    const fileId = profileData?.result?.photos?.[0]?.[0]?.file_id
-    if (!fileId) return res.json({ photo_url: null })
-    const fileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`)
-    const fileData = await fileRes.json()
-    const filePath = fileData?.result?.file_path
-    if (!filePath) return res.json({ photo_url: null })
-    res.json({ photo_url: `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}` })
-  } catch (err) { res.json({ photo_url: null }) }
-})
-
-app.get('/api/users/:tg_id', async (req, res) => {
-  try {
-    const { tg_id } = req.params
-    const user = await sql`SELECT * FROM users WHERE tg_id = ${String(tg_id)}`
-    res.json(user[0] || null)
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-app.post('/api/users/backup-login', async (req, res) => {
-  try {
-    const { email, password } = req.body
-    if (!email || !password) return res.status(400).json({ error: 'Email and password required' })
-    res.json({ success: true })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-app.post('/api/users/:tg_id/backup-login', async (req, res) => {
-  try {
-    const { tg_id } = req.params
-    const { email, password } = req.body
-    if (!email || !password) return res.status(400).json({ error: 'Email and password required' })
-    const { createHash } = await import('crypto')
-    const hashed = createHash('sha256')
-      .update(password + (process.env.PASSWORD_SALT || 'questwork_salt_2024'))
-      .digest('hex')
-    await sql`
-      UPDATE users SET backup_email = ${email.toLowerCase().trim()}, backup_password = ${hashed}
-      WHERE tg_id = ${String(tg_id)}
-    `
-    res.json({ success: true })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-app.post('/api/users/:tg_id/wallet', async (req, res) => {
-  try {
-    const { tg_id } = req.params
-    const { wallet_address } = req.body
-    await sql`UPDATE users SET wallet_address = ${wallet_address} WHERE tg_id = ${String(tg_id)}`
-    res.json({ success: true })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-
-// ─────────────────────────────────────────
-// MESSAGES — with contact detection
-// ─────────────────────────────────────────
-
-app.post('/api/messages', async (req, res) => {
-  try {
-    const { sender_tg_id, receiver_tg_id, content, msg_type, file_url, file_name } = req.body
-    if (!sender_tg_id || !receiver_tg_id) {
-      return res.status(400).json({ error: 'Missing required fields' })
-    }
-
-    // Contact detection — skip for file messages
-    if (msg_type !== 'file' && content) {
-      const check = detectContactInfo(content)
-      if (check.blocked) {
-        return res.status(200).json({ success: false, blocked: true, reason: check.reason })
-      }
-    }
-
-    const type = msg_type || 'text'
-    await sql`
-      INSERT INTO messages (sender_tg_id, receiver_tg_id, content, msg_type, file_url, file_name, is_read, created_at)
-      VALUES (${String(sender_tg_id)}, ${String(receiver_tg_id)}, ${content || ''}, ${type}, ${file_url || null}, ${file_name || null}, false, NOW())
-    `
-    res.json({ success: true, blocked: false })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-// MUST be before /:tg_id_1/:tg_id_2
-app.get('/api/messages/unread/:tg_id', async (req, res) => {
-  try {
-    const { tg_id } = req.params
-    const result = await sql`
-      SELECT COUNT(*) as count FROM messages
-      WHERE receiver_tg_id = ${String(tg_id)} AND is_read = false
-    `
-    res.json({ count: parseInt(result[0]?.count || 0) })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
+// Get all threads for a user
 app.get('/api/messages/threads/:tg_id', async (req, res) => {
+  const userId = req.params.tg_id;
   try {
-    const { tg_id } = req.params
-    const threads = await sql`
-      SELECT
-        sub.other_tg_id,
-        MAX(u.first_name) as other_name,
-        MAX(u.tg_username) as other_username,
-        MAX(sub.last_message) as last_message,
-        MAX(sub.last_time) as last_time,
-        SUM(sub.unread) as unread_count
+    const { rows } = await pool.query(`
+      SELECT DISTINCT ON (other_id)
+        other_id,
+        other_name,
+        other_username,
+        last_message,
+        last_time,
+        unread_count
       FROM (
         SELECT
-          CASE WHEN sender_tg_id = ${String(tg_id)} THEN receiver_tg_id ELSE sender_tg_id END as other_tg_id,
-          content as last_message,
-          created_at as last_time,
-          CASE WHEN receiver_tg_id = ${String(tg_id)} AND is_read = false THEN 1 ELSE 0 END as unread
-        FROM messages
-        WHERE sender_tg_id = ${String(tg_id)} OR receiver_tg_id = ${String(tg_id)}
+          CASE WHEN sender_tg_id = $1 THEN receiver_tg_id ELSE sender_tg_id END AS other_id,
+          CASE WHEN sender_tg_id = $1
+            THEN (SELECT first_name || ' ' || COALESCE(last_name,'') FROM users WHERE tg_id = m.receiver_tg_id)
+            ELSE (SELECT first_name || ' ' || COALESCE(last_name,'') FROM users WHERE tg_id = m.sender_tg_id)
+          END AS other_name,
+          CASE WHEN sender_tg_id = $1
+            THEN (SELECT tg_username FROM users WHERE tg_id = m.receiver_tg_id)
+            ELSE (SELECT tg_username FROM users WHERE tg_id = m.sender_tg_id)
+          END AS other_username,
+          content AS last_message,
+          created_at AS last_time,
+          (
+            SELECT COUNT(*) FROM messages
+            WHERE sender_tg_id != $1
+              AND receiver_tg_id = $1
+              AND is_read = FALSE
+              AND sender_tg_id = CASE WHEN m.sender_tg_id = $1 THEN m.receiver_tg_id ELSE m.sender_tg_id END
+          ) AS unread_count
+        FROM messages m
+        WHERE sender_tg_id = $1 OR receiver_tg_id = $1
+        ORDER BY created_at DESC
       ) sub
-      LEFT JOIN users u ON u.tg_id = sub.other_tg_id
-      GROUP BY sub.other_tg_id
-      ORDER BY MAX(sub.last_time) DESC
-    `
-    res.json(threads)
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
+      ORDER BY other_id, last_time DESC
+    `, [userId]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-app.get('/api/messages/:tg_id_1/:tg_id_2', async (req, res) => {
+// Get messages between two users
+app.get('/api/messages/:user1/:user2', async (req, res) => {
+  const { user1, user2 } = req.params;
   try {
-    const { tg_id_1, tg_id_2 } = req.params
-    const msgs = await sql`
+    await pool.query(`
+      UPDATE messages SET is_read = TRUE
+      WHERE receiver_tg_id = $1 AND sender_tg_id = $2
+    `, [user1, user2]);
+
+    const { rows } = await pool.query(`
       SELECT * FROM messages
-      WHERE (sender_tg_id = ${String(tg_id_1)} AND receiver_tg_id = ${String(tg_id_2)})
-         OR (sender_tg_id = ${String(tg_id_2)} AND receiver_tg_id = ${String(tg_id_1)})
-      ORDER BY created_at ASC LIMIT 200
-    `
-    await sql`
-      UPDATE messages SET is_read = true
-      WHERE receiver_tg_id = ${String(tg_id_1)} AND sender_tg_id = ${String(tg_id_2)} AND is_read = false
-    `
-    res.json(msgs)
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
+      WHERE (sender_tg_id = $1 AND receiver_tg_id = $2)
+         OR (sender_tg_id = $2 AND receiver_tg_id = $1)
+      ORDER BY created_at ASC
+      LIMIT 200
+    `, [user1, user2]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
+// Send a message (with contact info detection)
+app.post('/api/messages', async (req, res) => {
+  const { sender_tg_id, receiver_tg_id, content, msg_type, file_url, file_name } = req.body;
+  if (!sender_tg_id || !receiver_tg_id) return res.status(400).json({ error: 'sender and receiver required' });
+
+  // Block contact info
+  if (content && containsContactInfo(content)) {
+    return res.status(400).json({
+      error: 'blocked',
+      reason: 'Messages containing contact information (phone numbers, emails, social handles) are not allowed. All communication must stay in-app to protect both parties.'
+    });
+  }
+
+  try {
+    const { rows } = await pool.query(`
+      INSERT INTO messages (sender_tg_id, receiver_tg_id, content, msg_type, file_url, file_name)
+      VALUES ($1,$2,$3,$4,$5,$6)
+      RETURNING *
+    `, [sender_tg_id, receiver_tg_id, content || '', msg_type || 'text', file_url, file_name]);
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Unread count for a user
+app.get('/api/messages/unread/:tg_id', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT COUNT(*) AS count FROM messages WHERE receiver_tg_id = $1 AND is_read = FALSE',
+      [req.params.tg_id]
+    );
+    res.json({ count: parseInt(rows[0].count) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─────────────────────────────────────────
-// ESCROW CONTRACTS (TON blockchain)
+// ESCROW CONTRACTS
 // ─────────────────────────────────────────
 
+// Create escrow contract record (called after client sends TON)
 app.post('/api/escrow', async (req, res) => {
+  const { gig_id, gig_title, client_tg_id, freelancer_tg_id, amount_ton, amount_usdt, tx_hash } = req.body;
+  if (!client_tg_id || !freelancer_tg_id || !amount_ton) {
+    return res.status(400).json({ error: 'client_tg_id, freelancer_tg_id, amount_ton required' });
+  }
   try {
-    const { gig_id, client_tg_id, freelancer_tg_id, contract_address, amount_ton, amount_usdt, tx_hash } = req.body
-    const existing = await sql`
-      SELECT id FROM escrow_contracts WHERE gig_id = ${String(gig_id)} AND status = 'funded'
-    `
-    if (existing.length > 0) {
-      await sql`
-        UPDATE escrow_contracts SET tx_hash = ${tx_hash}, amount_ton = ${String(amount_ton)}, amount_usdt = ${String(amount_usdt || '')}
-        WHERE gig_id = ${String(gig_id)} AND status = 'funded'
-      `
-      return res.json({ success: true, updated: true })
-    }
-    await sql`
-      INSERT INTO escrow_contracts (gig_id, client_tg_id, freelancer_tg_id, contract_address, amount_ton, amount_usdt, tx_hash, status)
-      VALUES (${String(gig_id)}, ${String(client_tg_id)}, ${String(freelancer_tg_id)}, ${contract_address}, ${String(amount_ton)}, ${String(amount_usdt || '')}, ${tx_hash || ''}, 'funded')
-    `
-    res.json({ success: true })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
+    const { rows } = await pool.query(`
+      INSERT INTO escrow_contracts (gig_id, gig_title, client_tg_id, freelancer_tg_id, amount_ton, amount_usdt, tx_hash, status)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,'funded')
+      RETURNING *
+    `, [gig_id, gig_title, client_tg_id, freelancer_tg_id, amount_ton, amount_usdt, tx_hash]);
 
-app.get('/api/escrow/:gig_id', async (req, res) => {
-  try {
-    const { gig_id } = req.params
-    const result = await sql`
-      SELECT * FROM escrow_contracts WHERE gig_id = ${String(gig_id)} ORDER BY created_at DESC LIMIT 1
-    `
-    res.json(result[0] || null)
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
+    // Notify freelancer via Telegram bot
+    try {
+      await bot.sendMessage(freelancer_tg_id, 
+        `💰 Escrow funded!\n\nGig: ${gig_title || 'New Gig'}\nAmount: ${amount_ton} TON (~$${amount_usdt || '?'} USDT)\n\nFunds are locked in escrow. Complete the work and submit via QuestWork.\n\nhttps://t.me/Questworkbot`
+      );
+    } catch (_) {}
 
-app.get('/api/escrow/user/:tg_id', async (req, res) => {
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get contracts for a user (as client or freelancer)
+app.get('/api/escrow/:tg_id', async (req, res) => {
   try {
-    const { tg_id } = req.params
-    const result = await sql`
+    const { rows } = await pool.query(`
       SELECT * FROM escrow_contracts
-      WHERE client_tg_id = ${String(tg_id)} OR freelancer_tg_id = ${String(tg_id)}
+      WHERE client_tg_id = $1 OR freelancer_tg_id = $1
       ORDER BY created_at DESC
-    `
-    res.json(result)
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
+    `, [req.params.tg_id]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-app.post('/api/escrow/:gig_id/release', async (req, res) => {
+// Get contracts between two specific users (for inline chat display)
+app.get('/api/escrow/:user1/:user2', async (req, res) => {
+  const { user1, user2 } = req.params;
   try {
-    const { gig_id } = req.params
-    const { release_tx, client_tg_id } = req.body
-    const contract = await sql`
-      SELECT * FROM escrow_contracts WHERE gig_id = ${String(gig_id)} AND status = 'funded'
-    `
-    if (!contract.length) return res.status(404).json({ error: 'No funded escrow found' })
-    if (contract[0].client_tg_id !== String(client_tg_id)) {
-      return res.status(403).json({ error: 'Only the client can release payment' })
-    }
-    await sql`
-      UPDATE escrow_contracts
-      SET status = 'released', release_tx = ${release_tx || ''}, released_at = NOW()
-      WHERE gig_id = ${String(gig_id)} AND status = 'funded'
-    `
-    await sql`
-      UPDATE work_submissions SET status = 'approved', reviewed_at = NOW()
-      WHERE gig_id = ${String(gig_id)} AND status = 'pending'
-    `
-    const freelancerTgId = contract[0].freelancer_tg_id
-    const newScore = await recalcQuestScore(freelancerTgId)
-    const BOT_TOKEN = process.env.BOT_TOKEN
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: client_tg_id, text: `✅ Payment of ${contract[0].amount_ton} TON released from escrow!\n\nTx: ${release_tx || 'N/A'}` })
-    }).catch(() => {})
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: freelancerTgId, text: `💰 ${contract[0].amount_ton} TON released to your wallet!\n\n🏆 QuestScore updated: ${newScore}\n\nTx: ${release_tx || 'N/A'}` })
-    }).catch(() => {})
-    res.json({ success: true, new_quest_score: newScore })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
+    const { rows } = await pool.query(`
+      SELECT * FROM escrow_contracts
+      WHERE (client_tg_id = $1 AND freelancer_tg_id = $2)
+         OR (client_tg_id = $2 AND freelancer_tg_id = $1)
+      ORDER BY created_at DESC
+    `, [user1, user2]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
+// Release payment (client approves work)
+app.post('/api/escrow/:id/release', async (req, res) => {
+  const { release_tx } = req.body;
+  const contractId = req.params.id;
+  try {
+    const { rows } = await pool.query(`
+      UPDATE escrow_contracts
+      SET status = 'released', release_tx = $1, released_at = NOW()
+      WHERE id = $2
+      RETURNING *
+    `, [release_tx || 'manual', contractId]);
+
+    if (!rows.length) return res.status(404).json({ error: 'Contract not found' });
+    const contract = rows[0];
+
+    // Update freelancer QuestScore + jobs_completed
+    await pool.query(`
+      UPDATE users
+      SET quest_score    = quest_score + 10,
+          jobs_completed = jobs_completed + 1
+      WHERE tg_id = $1
+    `, [contract.freelancer_tg_id]);
+
+    // Notify both parties
+    try {
+      await bot.sendMessage(contract.freelancer_tg_id,
+        `✅ Payment Released!\n\nAmount: ${contract.amount_ton} TON\nGig: ${contract.gig_title || 'Completed'}\n\nYour QuestScore has been updated. Keep up the great work!\n\nhttps://t.me/Questworkbot`
+      );
+      await bot.sendMessage(contract.client_tg_id,
+        `✅ You released payment to your freelancer.\n\nGig: ${contract.gig_title || 'Completed'}\nAmount: ${contract.amount_ton} TON\n\nThank you for using QuestWork!`
+      );
+    } catch (_) {}
+
+    res.json({ success: true, contract: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─────────────────────────────────────────
 // WORK SUBMISSIONS
 // ─────────────────────────────────────────
 
 app.post('/api/submissions', async (req, res) => {
+  const { contract_id, gig_id, gig_title, client_tg_id, freelancer_tg_id, note, file_url, link_url } = req.body;
+  if (!client_tg_id || !freelancer_tg_id) return res.status(400).json({ error: 'client and freelancer tg_id required' });
   try {
-    const { gig_id, client_tg_id, freelancer_tg_id, note, file_url, link_url } = req.body
-    if (!gig_id || !freelancer_tg_id) return res.status(400).json({ error: 'Missing fields' })
-    const existing = await sql`
-      SELECT id FROM work_submissions
-      WHERE gig_id = ${String(gig_id)} AND freelancer_tg_id = ${String(freelancer_tg_id)} AND status = 'pending'
-    `
-    if (existing.length > 0) {
-      await sql`
-        UPDATE work_submissions SET note = ${note || ''}, file_url = ${file_url || null}, link_url = ${link_url || null}, submitted_at = NOW()
-        WHERE gig_id = ${String(gig_id)} AND freelancer_tg_id = ${String(freelancer_tg_id)} AND status = 'pending'
-      `
-      return res.json({ success: true, updated: true })
+    const { rows } = await pool.query(`
+      INSERT INTO work_submissions (contract_id, gig_id, gig_title, client_tg_id, freelancer_tg_id, note, file_url, link_url)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      RETURNING *
+    `, [contract_id, gig_id, gig_title, client_tg_id, freelancer_tg_id, note, file_url, link_url]);
+
+    // Update contract status to submitted
+    if (contract_id) {
+      await pool.query(
+        `UPDATE escrow_contracts SET status = 'submitted' WHERE id = $1`,
+        [contract_id]
+      );
     }
-    await sql`
-      INSERT INTO work_submissions (gig_id, client_tg_id, freelancer_tg_id, note, file_url, link_url, status)
-      VALUES (${String(gig_id)}, ${String(client_tg_id || '')}, ${String(freelancer_tg_id)}, ${note || ''}, ${file_url || null}, ${link_url || null}, 'pending')
-    `
-    if (client_tg_id) {
-      const BOT_TOKEN = process.env.BOT_TOKEN
-      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: client_tg_id, text: `📬 Work submitted for review!\n\nOpen QuestWork to review and release payment from escrow.` })
-      }).catch(() => {})
-    }
-    res.json({ success: true })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
 
-app.get('/api/submissions/:gig_id', async (req, res) => {
+    // Notify client
+    try {
+      await bot.sendMessage(client_tg_id,
+        `📦 Work Submitted!\n\nGig: ${gig_title || 'Your Gig'}\nFreelancer has submitted their work for review.\n\nOpen QuestWork to review and release payment.\n\nhttps://t.me/Questworkbot`
+      );
+    } catch (_) {}
+
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/submissions/:tg_id', async (req, res) => {
   try {
-    const { gig_id } = req.params
-    const result = await sql`
-      SELECT * FROM work_submissions WHERE gig_id = ${String(gig_id)} ORDER BY submitted_at DESC
-    `
-    res.json(result)
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-app.post('/api/submissions/:id/approve', async (req, res) => {
-  try {
-    const { id } = req.params
-    const sub = await sql`SELECT * FROM work_submissions WHERE id = ${parseInt(id)}`
-    if (!sub.length) return res.status(404).json({ error: 'Not found' })
-    await sql`UPDATE work_submissions SET status = 'approved', reviewed_at = NOW() WHERE id = ${parseInt(id)}`
-    const newScore = await recalcQuestScore(sub[0].freelancer_tg_id)
-    res.json({ success: true, new_quest_score: newScore })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
+    const { rows } = await pool.query(`
+      SELECT * FROM work_submissions
+      WHERE client_tg_id = $1 OR freelancer_tg_id = $1
+      ORDER BY submitted_at DESC
+    `, [req.params.tg_id]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─────────────────────────────────────────
-// NOTIFICATIONS
+// NOTIFICATIONS (Telegram bot push)
 // ─────────────────────────────────────────
-
 app.post('/api/notify', async (req, res) => {
+  const { chat_id, message } = req.body;
+  if (!chat_id || !message) return res.status(400).json({ error: 'chat_id and message required' });
   try {
-    const { chat_id, message } = req.body
-    const BOT_TOKEN = process.env.BOT_TOKEN
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id, text: message, parse_mode: 'HTML' })
-    })
-    res.json({ success: true })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
+    await bot.sendMessage(chat_id, message);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─────────────────────────────────────────
-// AI ROUTES
+// AI — GIG DESCRIPTION
 // ─────────────────────────────────────────
-
-app.post('/api/ai/pitch', async (req, res) => {
-  try {
-    const { gig_title, gig_company, user_skills, user_bio } = req.body
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-opus-4-6', max_tokens: 500,
-        messages: [{ role: 'user', content: `Write a professional and compelling job application pitch for this Web3 role. Job Title: ${gig_title}. Company: ${gig_company}. My Skills: ${user_skills || 'Web3, Community Management, BD'}. My Bio: ${user_bio || 'Experienced Web3 professional'}. Write a 3 paragraph pitch that is professional, specific, and compelling. No subject lines or greetings. Plain text only with line breaks between paragraphs.` }]
-      })
-    })
-    const data = await response.json()
-    res.json({ pitch: data.content[0].text })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
 app.post('/api/ai/gig', async (req, res) => {
+  const { basic_info } = req.body;
+  if (!basic_info) return res.status(400).json({ error: 'basic_info required' });
   try {
-    const { basic_info } = req.body
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-opus-4-6', max_tokens: 500,
-        messages: [{ role: 'user', content: `Write a professional Web3 job description based on: ${basic_info}. Role overview 2-3 sentences, then numbered responsibilities, then numbered requirements. Concise and Web3 focused. Plain text only.` }]
-      })
-    })
-    const data = await response.json()
-    res.json({ description: data.content[0].text })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
+    const msg = await anthropic.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: `Write a professional Web3 job description for the following role. Be specific, engaging, and concise (3-4 sentences). Only output the description, nothing else.\n\nRole info: ${basic_info}`
+      }]
+    });
+    res.json({ description: msg.content[0].text });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─────────────────────────────────────────
-// EXTERNAL GIGS
+// AI — PITCH WRITER (Premium)
 // ─────────────────────────────────────────
-
-const fetchWeb3Jobs = async () => {
+app.post('/api/ai/pitch', async (req, res) => {
+  const { gig_title, gig_company, user_skills, user_bio } = req.body;
   try {
-    const res = await fetch('https://web3.career/api/v1/jobs?token=WXFnYiuMV5ydYG9iHZegWy2pNVFduW2P', { headers: { 'Accept': 'application/json' } })
-    const data = await res.json()
-    const jobs = data.jobs || data || []
-    for (const job of jobs) {
-      const title = (job.title || '').toLowerCase()
-      let category = 'Other'
-      if (title.includes('community') || title.includes('discord')) category = 'Community Management'
-      else if (title.includes('business') || title.includes('bd') || title.includes('partnership')) category = 'Business Development'
-      else if (title.includes('dev') || title.includes('engineer') || title.includes('solidity')) category = 'Development'
-      else if (title.includes('social') || title.includes('content') || title.includes('marketing')) category = 'Social Media'
-      await sql`
-        INSERT INTO external_gigs (job_id, title, company, location, salary, apply_url, posted_at, category)
-        VALUES (${String(job.id)}, ${job.title}, ${job.company}, ${job.location}, ${job.salary}, ${job.url}, ${job.date}, ${category})
-        ON CONFLICT (job_id) DO NOTHING
-      `
-    }
-    console.log('✅ Web3.career jobs synced')
-  } catch (err) { console.error('❌ Sync failed:', err.message) }
-}
+    const msg = await anthropic.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 300,
+      messages: [{
+        role: 'user',
+        content: `Write a short, confident freelance pitch (3-4 sentences) for applying to this Web3 job. Only output the pitch text, no intro.\n\nJob: ${gig_title} at ${gig_company}\nApplicant skills: ${user_skills || 'Web3, community management'}\nApplicant bio: ${user_bio || 'Experienced Web3 professional'}`
+      }]
+    });
+    res.json({ pitch: msg.content[0].text });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-fetchWeb3Jobs()
-setInterval(fetchWeb3Jobs, 60 * 60 * 1000)
-
-app.get('/api/external-gigs', async (req, res) => {
+// ─────────────────────────────────────────
+// AI — SMART MATCHING (matches freelancers to a gig)
+// ─────────────────────────────────────────
+app.post('/api/ai/match', async (req, res) => {
+  const { gig_id, gig_title, gig_category, gig_description } = req.body;
   try {
-    const result = await sql`SELECT * FROM external_gigs ORDER BY posted_at DESC LIMIT 100`
-    res.json(result)
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
+    const { rows: users } = await pool.query(
+      `SELECT tg_id, first_name, skills, quest_score, jobs_completed
+       FROM users WHERE skills IS NOT NULL AND skills != '' AND dm_enabled = TRUE
+       ORDER BY quest_score DESC LIMIT 50`
+    );
+    if (!users.length) return res.json({ matches: [] });
 
+    const userList = users.map(u => `${u.first_name} (${u.tg_id}): skills=${u.skills}, score=${u.quest_score}`).join('\n');
+
+    const msg = await anthropic.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: `Given this Web3 gig and list of freelancers, return the top 5 best-matched freelancer tg_ids as a JSON array. Only output valid JSON, nothing else.\n\nGig: ${gig_title} (${gig_category})\nDescription: ${gig_description}\n\nFreelancers:\n${userList}\n\nOutput format: {"matches": ["tg_id1","tg_id2",...]}`
+      }]
+    });
+
+    let parsed = { matches: [] };
+    try { parsed = JSON.parse(msg.content[0].text); } catch (_) {}
+    res.json(parsed);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─────────────────────────────────────────
-// BRAINTREE
+// AI — FREELANCER SCORE
 // ─────────────────────────────────────────
+app.get('/api/ai/score/:tg_id', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM users WHERE tg_id = $1', [req.params.tg_id]);
+    if (!rows.length) return res.status(404).json({ error: 'User not found' });
+    const user = rows[0];
 
+    const msg = await anthropic.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 200,
+      messages: [{
+        role: 'user',
+        content: `Score this Web3 freelancer out of 100 based on their profile. Return only JSON: {"score": number, "reason": "short reason"}.\n\nName: ${user.first_name}\nBio: ${user.bio || 'None'}\nSkills: ${user.skills || 'None'}\nJobs completed: ${user.jobs_completed || 0}\nCurrent score: ${user.quest_score || 0}`
+      }]
+    });
+
+    let parsed = { score: 0, reason: '' };
+    try { parsed = JSON.parse(msg.content[0].text); } catch (_) {}
+    res.json(parsed);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────
+// BRAINTREE — Premium subscription
+// ─────────────────────────────────────────
 app.get('/api/braintree/token', async (req, res) => {
   try {
-    const response = await gateway.clientToken.generate({})
-    res.json({ token: response.clientToken })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
+    const response = await btGateway.clientToken.generate({});
+    res.json({ token: response.clientToken });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.post('/api/braintree/subscribe', async (req, res) => {
+  const { paymentMethodNonce, tg_id } = req.body;
   try {
-    const { paymentMethodNonce, tg_id } = req.body
-    const result = await gateway.customer.create({ paymentMethodNonce })
-    if (!result.success) return res.status(400).json({ error: result.message })
-    const paymentMethodToken = result.customer.paymentMethods[0].token
-    const subscription = await gateway.subscription.create({ paymentMethodToken, planId: process.env.BRAINTREE_PLAN_ID })
-    if (!subscription.success) return res.status(400).json({ error: subscription.message })
-    await sql`UPDATE users SET is_premium = true, subscription_id = ${subscription.subscription.id} WHERE tg_id = ${tg_id}`
-    res.json({ success: true, subscriptionId: subscription.subscription.id })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
+    const customerResult = await btGateway.customer.create({
+      paymentMethodNonce
+    });
+    if (!customerResult.success) {
+      return res.status(400).json({ error: customerResult.message });
+    }
+    const paymentMethodToken = customerResult.customer.paymentMethods[0].token;
+    const subResult = await btGateway.subscription.create({
+      paymentMethodToken,
+      planId: process.env.BRAINTREE_PLAN_ID,
+    });
+    if (!subResult.success) {
+      return res.status(400).json({ error: subResult.message });
+    }
+    if (tg_id) {
+      await pool.query(
+        'UPDATE users SET is_premium = TRUE, subscription_id = $1 WHERE tg_id = $2',
+        [subResult.subscription.id, tg_id]
+      );
+    }
+    res.json({ success: true, subscription_id: subResult.subscription.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.post('/api/braintree/cancel', async (req, res) => {
+  const { tg_id } = req.body;
   try {
-    const { tg_id } = req.body
-    const user = await sql`SELECT subscription_id FROM users WHERE tg_id = ${tg_id}`
-    if (user[0]?.subscription_id) {
-      await gateway.subscription.cancel(user[0].subscription_id)
-      await sql`UPDATE users SET is_premium = false, subscription_id = null WHERE tg_id = ${tg_id}`
-    }
-    res.json({ success: true })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
+    const { rows } = await pool.query('SELECT subscription_id FROM users WHERE tg_id = $1', [tg_id]);
+    if (!rows.length || !rows[0].subscription_id) return res.status(404).json({ error: 'No subscription found' });
+    await btGateway.subscription.cancel(rows[0].subscription_id);
+    await pool.query('UPDATE users SET is_premium = FALSE, subscription_id = NULL WHERE tg_id = $1', [tg_id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
+// ─────────────────────────────────────────
+// ADMIN — Premium toggle
+// ─────────────────────────────────────────
 app.post('/api/admin/premium', async (req, res) => {
+  const { admin_key, tg_id, set_premium } = req.body;
+  if (admin_key !== process.env.ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
   try {
-    const { tg_id, is_premium } = req.body
-    await sql`UPDATE users SET is_premium = ${is_premium} WHERE tg_id = ${tg_id}`
-    res.json({ success: true })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
+    await pool.query('UPDATE users SET is_premium = $1 WHERE tg_id = $2', [set_premium, tg_id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─────────────────────────────────────────
-// TELEGRAM BOT
+// TELEGRAM BOT ADMIN COMMANDS (polling)
 // ─────────────────────────────────────────
+const adminBot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, {
-  polling: { autoStart: true, params: { timeout: 10 } }
-})
-
-bot.on('polling_error', (err) => console.log('Bot polling error:', err.code))
-
-bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, 'Welcome to QuestWork! 🚀\nFind Web3 gigs and get paid in crypto.', {
-    reply_markup: { inline_keyboard: [[{ text: '🚀 Open QuestWork', web_app: { url: 'https://questwork-green.vercel.app' } }]] }
-  })
-})
-
-bot.onText(/\/upgrade (.+)/, async (msg, match) => {
-  const username = match[1].trim().replace('@', '')
+adminBot.onText(/\/upgrade (.+)/, async (msg, match) => {
+  if (String(msg.from.id) !== String(process.env.ADMIN_TG_ID)) {
+    return adminBot.sendMessage(msg.chat.id, '❌ Not authorized.');
+  }
+  const target = match[1].trim();
   try {
-    const user = await sql`SELECT * FROM users WHERE tg_username = ${username}`
-    if (!user[0]) { bot.sendMessage(msg.chat.id, `❌ User @${username} not found.`); return }
-    await sql`UPDATE users SET is_premium = true WHERE tg_username = ${username}`
-    bot.sendMessage(msg.chat.id, `✅ @${username} upgraded to Premium!`)
-  } catch (err) { bot.sendMessage(msg.chat.id, `❌ Error: ${err.message}`) }
-})
+    await pool.query('UPDATE users SET is_premium = TRUE WHERE tg_id = $1 OR tg_username = $1', [target]);
+    adminBot.sendMessage(msg.chat.id, `✅ User ${target} upgraded to Premium!`);
+  } catch (err) {
+    adminBot.sendMessage(msg.chat.id, `❌ Error: ${err.message}`);
+  }
+});
 
-bot.onText(/\/downgrade (.+)/, async (msg, match) => {
-  const username = match[1].trim().replace('@', '')
+adminBot.onText(/\/downgrade (.+)/, async (msg, match) => {
+  if (String(msg.from.id) !== String(process.env.ADMIN_TG_ID)) {
+    return adminBot.sendMessage(msg.chat.id, '❌ Not authorized.');
+  }
+  const target = match[1].trim();
   try {
-    await sql`UPDATE users SET is_premium = false WHERE tg_username = ${username}`
-    bot.sendMessage(msg.chat.id, `✅ @${username} downgraded.`)
-  } catch (err) { bot.sendMessage(msg.chat.id, `❌ Error: ${err.message}`) }
-})
+    await pool.query('UPDATE users SET is_premium = FALSE WHERE tg_id = $1 OR tg_username = $1', [target]);
+    adminBot.sendMessage(msg.chat.id, `✅ User ${target} downgraded.`);
+  } catch (err) {
+    adminBot.sendMessage(msg.chat.id, `❌ Error: ${err.message}`);
+  }
+});
 
-bot.onText(/\/score (.+)/, async (msg, match) => {
-  const username = match[1].trim().replace('@', '')
+adminBot.onText(/\/stats/, async (msg) => {
+  if (String(msg.from.id) !== String(process.env.ADMIN_TG_ID)) return;
   try {
-    const user = await sql`SELECT * FROM users WHERE tg_username = ${username}`
-    if (!user[0]) { bot.sendMessage(msg.chat.id, `❌ User not found.`); return }
-    const score = await recalcQuestScore(user[0].tg_id)
-    bot.sendMessage(msg.chat.id, `🏆 @${username} QuestScore: ${score}`)
-  } catch (err) { bot.sendMessage(msg.chat.id, `❌ Error: ${err.message}`) }
-})
+    const { rows: [stats] } = await pool.query(`
+      SELECT
+        (SELECT COUNT(*) FROM users) AS total_users,
+        (SELECT COUNT(*) FROM users WHERE is_premium = TRUE) AS premium_users,
+        (SELECT COUNT(*) FROM gigs) AS total_gigs,
+        (SELECT COUNT(*) FROM applications) AS total_applications,
+        (SELECT COUNT(*) FROM messages) AS total_messages,
+        (SELECT COUNT(*) FROM escrow_contracts) AS total_contracts
+    `);
+    adminBot.sendMessage(msg.chat.id,
+      `📊 QuestWork Stats\n\n👥 Users: ${stats.total_users}\n⭐ Premium: ${stats.premium_users}\n💼 Gigs: ${stats.total_gigs}\n📨 Applications: ${stats.total_applications}\n💬 Messages: ${stats.total_messages}\n🔒 Contracts: ${stats.total_contracts}`
+    );
+  } catch (err) {
+    adminBot.sendMessage(msg.chat.id, `❌ Error: ${err.message}`);
+  }
+});
 
+// ─────────────────────────────────────────
+// EXTERNAL GIGS — web3.career (proxy to hide API key)
+// ─────────────────────────────────────────
+app.get('/api/external-gigs', async (req, res) => {
+  const { search, category } = req.query;
+  try {
+    let url = `https://web3.career/api/v1?token=${process.env.WEB3_CAREER_TOKEN}`;
+    if (search)   url += `&search=${encodeURIComponent(search)}`;
+    if (category) url += `&tag=${encodeURIComponent(category)}`;
 
-const PORT = process.env.PORT || 3000
-app.listen(PORT, () => console.log(`QuestWork API running on port ${PORT}`))
+    const response = await fetch(url);
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────
+// START
+// ─────────────────────────────────────────
+const PORT = process.env.PORT || 3001;
+
+initDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 QuestWork API running on port ${PORT}`);
+  });
+}).catch(err => {
+  console.error('❌ DB init failed:', err.message);
+  process.exit(1);
+});
