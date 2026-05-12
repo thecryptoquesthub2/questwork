@@ -1059,8 +1059,31 @@ function SearchPage({ colors, dark, tgUser, onMessage }) {
   const [gigResults, setGigResults] = useState([])
   const [selectedFreelancer, setSelectedFreelancer] = useState(null)
   const [skillFilter, setSkillFilter] = useState('All')
+  const [dbUsers, setDbUsers] = useState([])
+  const [loadingUsers, setLoadingUsers] = useState(true)
   const categories = ['All', 'Community Management', 'Business Development', 'Development', 'Social Media', 'Writing']
   const labels = ['All', 'Community', 'BD', 'Dev', 'Social', 'Writing']
+
+  // Load ALL real users on mount
+  useEffect(() => {
+    fetch(`${API}/api/users/search?q=`)
+      .then(r => r.json())
+      .then(d => setDbUsers(Array.isArray(d) ? d : []))
+      .catch(() => {})
+      .finally(() => setLoadingUsers(false))
+  }, [])
+
+  // Re-fetch when query changes
+  useEffect(() => {
+    if (mode !== 'freelancers') return
+    const timer = setTimeout(() => {
+      fetch(`${API}/api/users/search?q=${encodeURIComponent(query)}`)
+        .then(r => r.json())
+        .then(d => setDbUsers(Array.isArray(d) ? d : []))
+        .catch(() => {})
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [query, mode])
 
   const searchGigs = (value) => {
     if (!value.trim()) { setGigResults([]); return }
@@ -1068,11 +1091,36 @@ function SearchPage({ colors, dark, tgUser, onMessage }) {
     setGigResults(SAMPLE_GIGS.filter(g => g.title.toLowerCase().includes(lower) || g.company?.toLowerCase().includes(lower) || g.category.toLowerCase().includes(lower)))
   }
 
-  const handleSearch = (value) => { setQuery(value); if (mode === 'gigs') searchGigs(value) }
+  const handleSearch = (value) => {
+    setQuery(value)
+    if (mode === 'gigs') searchGigs(value)
+  }
 
-  const filteredFreelancers = SAMPLE_FREELANCERS.filter(f => {
+  // Merge real DB users + sample freelancers, real users take priority
+  const realUserIds = new Set(dbUsers.map(u => u.tg_username).filter(Boolean))
+  const filteredSamples = SAMPLE_FREELANCERS.filter(f => !realUserIds.has(f.username))
+
+  const allFreelancers = [
+    ...dbUsers.map(u => ({
+      id: u.tg_id,
+      tg_id: u.tg_id,
+      name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Anonymous',
+      username: u.tg_username || '',
+      skills: u.skills ? u.skills.split(',').map(s => s.trim()).filter(Boolean) : [],
+      questScore: u.quest_score || 0,
+      gigsCompleted: u.jobs_completed || 0,
+      earned: '$0',
+      available: u.availability === 'Available' || u.dm_enabled,
+      bio: u.bio || 'No bio yet.',
+      dm_enabled: u.dm_enabled !== false,
+      isReal: true,
+    })),
+    ...filteredSamples.map(f => ({ ...f, isReal: false })),
+  ]
+
+  const filteredFreelancers = allFreelancers.filter(f => {
     const matchSkill = skillFilter === 'All' || f.skills.some(s => s.toLowerCase().includes(skillFilter.toLowerCase().split(' ')[0].toLowerCase()))
-    const matchQuery = !query || f.name.toLowerCase().includes(query.toLowerCase()) || f.skills.some(s => s.toLowerCase().includes(query.toLowerCase()))
+    const matchQuery = !query || f.name.toLowerCase().includes(query.toLowerCase()) || f.username.toLowerCase().includes(query.toLowerCase()) || f.skills.some(s => s.toLowerCase().includes(query.toLowerCase()))
     return matchSkill && matchQuery
   })
 
@@ -1101,25 +1149,38 @@ function SearchPage({ colors, dark, tgUser, onMessage }) {
               return <button key={lab} onClick={() => { haptic('light'); setSkillFilter(cat) }} style={{ padding: '6px 14px', borderRadius: '20px', whiteSpace: 'nowrap', background: skillFilter === cat ? colors.btnBg : colors.surface2, border: `1px solid ${skillFilter === cat ? colors.btnBg : colors.border}`, color: skillFilter === cat ? colors.btnText : colors.text, fontSize: '12px', fontWeight: skillFilter === cat ? '600' : '400', cursor: 'pointer' }}>{lab}</button>
             })}
           </div>
-          <div style={{ fontSize: '12px', color: colors.text2, marginBottom: '12px' }}>{filteredFreelancers.length} freelancer{filteredFreelancers.length !== 1 ? 's' : ''} available</div>
+
+          <div style={{ fontSize: '12px', color: colors.text2, marginBottom: '12px' }}>
+            {loadingUsers ? 'Loading...' : `${filteredFreelancers.length} freelancer${filteredFreelancers.length !== 1 ? 's' : ''} found`}
+          </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {filteredFreelancers.map(f => (
-              <div key={f.id} onClick={() => { haptic('light'); setSelectedFreelancer(f) }} style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '16px', padding: '16px', cursor: 'pointer', boxShadow: dark ? 'none' : '0 1px 6px rgba(0,0,0,0.05)' }}>
+            {filteredFreelancers.map((f, idx) => (
+              <div key={f.tg_id || idx} onClick={() => { haptic('light'); setSelectedFreelancer(f) }} style={{ background: colors.card, border: `1px solid ${f.isReal ? colors.goldBorder : colors.border}`, borderRadius: '16px', padding: '16px', cursor: 'pointer', boxShadow: dark ? 'none' : '0 1px 6px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '10px' }}>
                   <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: colors.goldBg, border: `1px solid ${colors.goldBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700', color: colors.gold, flexShrink: 0 }}>{f.name[0]}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                       <div style={{ fontSize: '15px', fontWeight: '600', color: colors.text }}>{f.name}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '12px', fontWeight: '600', color: colors.gold }}><IconStar size={12}/>{f.questScore}</div>
+                      {f.isReal && <div style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '4px', background: colors.goldBg, color: colors.gold, fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Live</div>}
+                      {f.questScore > 0 && <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '12px', fontWeight: '600', color: colors.gold }}><IconStar size={12}/>{f.questScore}</div>}
                     </div>
-                    <div style={{ fontSize: '12px', color: colors.text2 }}>{f.gigsCompleted} gigs · {f.earned}</div>
+                    <div style={{ fontSize: '12px', color: colors.text2 }}>{f.gigsCompleted > 0 ? `${f.gigsCompleted} gigs · ` : ''}{f.username ? `@${f.username}` : ''}</div>
                   </div>
-                  <div style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '20px', background: f.available ? colors.greenBg : colors.surface2, color: f.available ? colors.green : colors.text2, border: `1px solid ${f.available ? colors.greenBorder : colors.border}`, fontWeight: '600', flexShrink: 0 }}>{f.available ? 'Available' : 'Busy'}</div>
+                  <div style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '20px', background: f.dm_enabled !== false ? colors.greenBg : colors.surface2, color: f.dm_enabled !== false ? colors.green : colors.text2, border: `1px solid ${f.dm_enabled !== false ? colors.greenBorder : colors.border}`, fontWeight: '600', flexShrink: 0 }}>
+                    {f.dm_enabled !== false ? 'Available' : 'DM Off'}
+                  </div>
                 </div>
-                <div style={{ fontSize: '13px', color: colors.text2, lineHeight: 1.5, marginBottom: '10px' }}>{f.bio}</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>{f.skills.map((s, i) => <div key={i} style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: colors.goldBg, border: `1px solid ${colors.goldBorder}`, color: colors.gold }}>{s}</div>)}</div>
-                <button onClick={e => { e.stopPropagation(); onMessage?.({ other_id: String(f.id), other_name: f.name, other_username: f.username }) }} style={{ width: '100%', padding: '10px', borderRadius: '11px', background: colors.btnBg, border: 'none', color: colors.btnText, fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
-                  Message in QuestWork
+                {f.bio && f.bio !== 'No bio yet.' && <div style={{ fontSize: '13px', color: colors.text2, lineHeight: 1.5, marginBottom: '10px' }}>{f.bio}</div>}
+                {f.skills.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>{f.skills.map((s, i) => <div key={i} style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: colors.goldBg, border: `1px solid ${colors.goldBorder}`, color: colors.gold }}>{s}</div>)}</div>}
+                <button
+                  onClick={e => {
+                    e.stopPropagation()
+                    if (f.dm_enabled === false) { alert('This user has turned off direct messages.'); return }
+                    onMessage?.({ other_id: String(f.tg_id || f.id), other_name: f.name, other_username: f.username })
+                  }}
+                  style={{ width: '100%', padding: '10px', borderRadius: '11px', background: f.dm_enabled !== false ? colors.btnBg : colors.surface2, border: `1px solid ${f.dm_enabled !== false ? colors.btnBg : colors.border}`, color: f.dm_enabled !== false ? colors.btnText : colors.text2, fontSize: '13px', fontWeight: '600', cursor: f.dm_enabled !== false ? 'pointer' : 'not-allowed' }}>
+                  {f.dm_enabled !== false ? 'Message in QuestWork' : 'DM Disabled'}
                 </button>
               </div>
             ))}
@@ -1134,7 +1195,7 @@ function SearchPage({ colors, dark, tgUser, onMessage }) {
             <div>
               <div style={{ fontSize: '13px', color: colors.text2, marginBottom: '14px' }}>{gigResults.length} result{gigResults.length !== 1 ? 's' : ''} for "{query}"</div>
               {gigResults.length === 0
-                ? <div style={{ textAlign: 'center', padding: '40px 20px', color: colors.text2 }}><div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '6px', color: colors.text }}>No gigs found</div></div>
+                ? <div style={{ textAlign: 'center', padding: '40px 20px', color: colors.text2 }}><div style={{ fontSize: '16px', fontWeight: '600', color: colors.text }}>No gigs found</div></div>
                 : <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>{gigResults.map(g => <div key={g.id} style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '16px', padding: '16px' }}><div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '3px', color: colors.text }}>{g.title}</div><div style={{ fontSize: '13px', color: colors.text2, marginBottom: '8px' }}>{g.company} · {g.pay}</div><div style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '6px', background: colors.surface2, color: colors.text2, display: 'inline-block' }}>{g.category}</div></div>)}</div>
               }
             </div>
@@ -1149,7 +1210,7 @@ function SearchPage({ colors, dark, tgUser, onMessage }) {
           dark={dark}
           tgUser={tgUser}
           onClose={() => setSelectedFreelancer(null)}
-          onMessage={(thread) => { onMessage?.(thread) }}
+          onMessage={(thread) => onMessage?.(thread)}
         />
       )}
     </div>

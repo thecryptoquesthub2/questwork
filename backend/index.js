@@ -195,31 +195,23 @@ app.post('/api/users', async (req, res) => {
 // Search users — MUST be before /:tg_id
 app.get('/api/users/search', async (req, res) => {
   const { q } = req.query;
-  if (!q) return res.json([]);
   try {
     const { rows } = await pool.query(`
       SELECT tg_id, tg_username, first_name, last_name, bio, skills, availability, quest_score, jobs_completed, dm_enabled, is_premium
       FROM users
-      WHERE dm_enabled = TRUE
-        AND (
-          LOWER(first_name) LIKE $1 OR
-          LOWER(last_name)  LIKE $1 OR
-          LOWER(tg_username) LIKE $1 OR
-          LOWER(skills)      LIKE $1
-        )
-      LIMIT 20
-    `, [`%${q.toLowerCase()}%`]);
+      WHERE ($1 = '' OR (
+        LOWER(first_name) LIKE $2 OR
+        LOWER(last_name)  LIKE $2 OR
+        LOWER(tg_username) LIKE $2 OR
+        LOWER(skills)      LIKE $2
+      ))
+      ORDER BY quest_score DESC, created_at DESC
+      LIMIT 50
+    `, [q || '', `%${(q || '').toLowerCase()}%`]);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
-
-// Backup login
-app.post('/api/users/backup-login', async (req, res) => {
-  const { email, password } = req.body;
-  // Store hashed in production — for now just acknowledge
-  res.json({ success: true });
 });
 
 // Get user by tg_id
